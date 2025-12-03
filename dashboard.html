@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scout Pass | Command Center V10</title>
+    <title>Scout Pass | Command Center V13</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#6c5ce7">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -24,13 +24,15 @@
         .nav-link:hover, .nav-link.active { background: rgba(108, 92, 231, 0.1); color: var(--primary); font-weight: 600; transform: translateX(5px); }
         .form-control, .form-select { background: #f8f9fa; border: 1px solid #eee; color: var(--text); padding: 12px; border-radius: 10px; }
         .btn-sos { background: #ff7675; color: white; border: none; padding: 10px 25px; border-radius: 50px; font-weight: 700; animation: pulse 2s infinite; }
+        .btn-lock { background: #2d3436; color: white; border: none; padding: 10px 25px; border-radius: 50px; font-weight: 700; margin-right: 10px; }
         .event-card-active { border-top: 5px solid var(--primary); }
         #qr-hidden { display: none; }
-
-        /* Alerts Styling */
         .alert-card { border-left: 5px solid #ff7675; background: #fff5f5; }
         .badge-pulse { animation: pulseRed 1.5s infinite; }
         @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(255, 118, 117, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 118, 117, 0); } }
+        
+        /* Mod Hider Class */
+        .admin-only { display: block; } 
     </style>
 </head>
 <body>
@@ -38,17 +40,17 @@
 <div id="qr-hidden"></div>
 
 <div class="sidebar">
-    <div class="brand mb-4 text-primary fw-bold fs-4"><i class="bi bi-shield-lock-fill"></i> ScoutPass <small style="font-size:10px; opacity:0.5;">V10</small></div>
+    <div class="brand mb-4 text-primary fw-bold fs-4"><i class="bi bi-shield-lock-fill"></i> ScoutPass <small style="font-size:10px; opacity:0.5;">V13</small></div>
     <div class="nav flex-column">
         <div class="nav-link active" onclick="showSection('overview')"><i class="bi bi-grid-1x2-fill me-2"></i> War Room</div>
-        <div class="nav-link text-danger fw-bold" onclick="showSection('alerts')">
+        <div class="nav-link text-danger fw-bold admin-only" onclick="showSection('alerts')">
             <i class="bi bi-bell-fill me-2"></i> Alerts <span id="alertBadge" class="badge bg-danger ms-2" style="display:none">0</span>
         </div>
-        <div class="nav-link" onclick="showSection('registration')"><i class="bi bi-person-vcard-fill me-2"></i> Registration</div>
-        <div class="nav-link" onclick="showSection('directory')"><i class="bi bi-search me-2"></i> Directory</div>
+        <div class="nav-link admin-only" onclick="showSection('registration')"><i class="bi bi-person-vcard-fill me-2"></i> Registration</div>
+        <div class="nav-link admin-only" onclick="showSection('directory')"><i class="bi bi-search me-2"></i> Directory</div>
         <div class="nav-link" onclick="showSection('events')"><i class="bi bi-calendar-event-fill me-2"></i> Events</div>
-        <div class="nav-link" onclick="showSection('staff')"><i class="bi bi-people-fill me-2"></i> Staff Manager</div>
-        <div class="nav-link" onclick="showSection('logs')"><i class="bi bi-list-columns-reverse me-2"></i> Reports</div>
+        <div class="nav-link admin-only" onclick="showSection('staff')"><i class="bi bi-people-fill me-2"></i> Staff Manager</div>
+        <div class="nav-link admin-only" onclick="showSection('logs')"><i class="bi bi-list-columns-reverse me-2"></i> Reports</div>
         <div class="nav-link mt-5 text-danger" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i> Logout</div>
     </div>
 </div>
@@ -56,7 +58,10 @@
 <div class="main-content">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div><h2 class="fw-bold mb-0" id="pageTitle">War Room</h2><small class="text-muted">System Online • <span id="clock">00:00:00</span></small></div>
-        <button class="btn-sos" onclick="triggerSOS()"><i class="bi bi-broadcast"></i> SOS ALERT</button>
+        <div class="d-flex gap-2">
+            <button class="btn-lock admin-only" onclick="lockSystem()"><i class="bi bi-lock-fill"></i></button>
+            <button class="btn-sos admin-only" onclick="triggerSOS()"><i class="bi bi-broadcast"></i> SOS ALERT</button>
+        </div>
     </div>
 
     <div id="sec-overview" class="section animate__animated animate__fadeIn">
@@ -67,59 +72,6 @@
         </div>
         <h5 class="fw-bold mt-4 mb-3">Live Occupancy Cards</h5>
         <div id="liveEventCards" class="row g-4"><div class="col-12 text-center text-muted py-5">Loading events...</div></div>
-    </div>
-
-    <div id="sec-alerts" class="section animate__animated animate__fadeIn" style="display:none;">
-        <div class="stat-card border-danger border-top border-5">
-            <div class="d-flex justify-content-between mb-4">
-                <h5 class="fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i> Critical Alerts</h5>
-                <button onclick="clearAlerts()" class="btn btn-sm btn-outline-secondary">Clear All</button>
-            </div>
-            <div class="table-responsive">
-                <table class="table align-middle">
-                    <thead class="table-light"><tr><th>Time</th><th>Message</th><th>Location</th><th>Action</th></tr></thead>
-                    <tbody id="alertsTableBody">
-                        <tr><td colspan="4" class="text-center text-muted py-4">No active alerts.</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div id="sec-registration" class="section animate__animated animate__fadeIn" style="display:none;">
-        <div class="row">
-            <div class="col-md-5">
-                <div class="stat-card">
-                    <h5 class="fw-bold mb-3">🚀 Bulk Registration</h5>
-                    <div class="bg-light p-3 rounded mb-3 border">
-                        <label class="small fw-bold text-primary">TROOP NUMBER</label>
-                        <input type="text" id="troopNumberInput" class="form-control fw-bold fs-4 text-center" placeholder="e.g. 25">
-                        <div class="form-text small">ID Format: <b>KG<span id="previewTroop">XX</span>/001</b></div>
-                    </div>
-                    <label class="small text-muted fw-bold">PASTE DATA (Name, Troop, District)</label>
-                    <textarea id="bulkText" class="form-control mb-3" rows="6" placeholder="Name, Troop, District..."></textarea>
-                    <div class="progress mb-3" style="height: 5px; display:none" id="bulkProgress"><div class="progress-bar bg-success" style="width: 0%"></div></div>
-                    <button class="btn btn-primary w-100 fw-bold py-2" onclick="processBulk()">Process & Download IDs</button>
-                </div>
-            </div>
-            <div class="col-md-7">
-                <div class="stat-card h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-3"><h6 class="fw-bold mb-0">Recently Added</h6><button id="btnManualDownload" onclick="downloadLastBatch()" class="btn btn-sm btn-dark" disabled>Download PDF</button></div>
-                    <div style="max-height: 500px; overflow-y: auto;"><table class="table table-sm table-striped"><thead><tr><th>ID</th><th>Name</th><th>Troop</th></tr></thead><tbody id="regTable"></tbody></table></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="sec-directory" class="section animate__animated animate__fadeIn" style="display:none;">
-        <div class="stat-card">
-            <div class="input-group input-group-lg">
-                <span class="input-group-text bg-white border-0"><i class="bi bi-search text-primary"></i></span>
-                <input type="text" id="searchDir" class="form-control border-0" placeholder="Type ID to filter..." onkeyup="filterDirectory()">
-                <button class="btn btn-outline-secondary" onclick="document.getElementById('searchDir').value=''; filterDirectory()">Clear</button>
-            </div>
-        </div>
-        <div class="stat-card"><div class="table-responsive"><table class="table align-middle table-hover"><thead><tr><th>ID</th><th>Name</th><th>Troop</th><th>Status</th><th>Action</th></tr></thead><tbody id="dirTable"></tbody></table></div></div>
     </div>
 
     <div id="sec-events" class="section animate__animated animate__fadeIn" style="display:none;">
@@ -137,17 +89,36 @@
         </div>
     </div>
 
-    <div id="sec-staff" class="section animate__animated animate__fadeIn" style="display:none;">
+    <div id="sec-alerts" class="section animate__animated animate__fadeIn" style="display:none;">
+        <div class="stat-card border-danger border-top border-5">
+            <div class="d-flex justify-content-between mb-4"><h5 class="fw-bold text-danger">Critical Alerts</h5><button onclick="clearAlerts()" class="btn btn-sm btn-outline-secondary">Clear All</button></div>
+            <div class="table-responsive"><table class="table align-middle"><tbody id="alertsTableBody"><tr><td colspan="4" class="text-center text-muted py-4">No active alerts.</td></tr></tbody></table></div>
+        </div>
+    </div>
+
+    <div id="sec-registration" class="section animate__animated animate__fadeIn" style="display:none;">
         <div class="row">
-            <div class="col-md-4">
+            <div class="col-md-5">
                 <div class="stat-card">
-                    <h5 class="fw-bold">Add Staff</h5>
-                    <input type="email" id="stfEmail" class="form-control mb-2" placeholder="Email">
-                    <input type="text" id="stfPass" class="form-control mb-2" placeholder="Password">
-                    <select id="stfRole" class="form-select mb-2"><option value="scanner">Scanner</option><option value="moderator">Moderator</option><option value="admin">Admin</option></select>
-                    <button onclick="addStaff()" class="btn btn-dark w-100 fw-bold">Create Account</button>
+                    <h5 class="fw-bold mb-3">🚀 Bulk Registration</h5>
+                    <div class="bg-light p-3 rounded mb-3 border"><label class="small fw-bold text-primary">TROOP NUMBER</label><input type="text" id="troopNumberInput" class="form-control fw-bold fs-4 text-center" placeholder="e.g. 25"><div class="form-text small">ID Format: <b>KG<span id="previewTroop">XX</span>/001</b></div></div>
+                    <label class="small text-muted fw-bold">PASTE DATA (Name, Troop, District)</label><textarea id="bulkText" class="form-control mb-3" rows="6"></textarea>
+                    <div class="progress mb-3" style="display:none" id="bulkProgress"><div class="progress-bar bg-success" style="width: 0%"></div></div>
+                    <button class="btn btn-primary w-100 fw-bold py-2" onclick="processBulk()">Process & Download IDs</button>
                 </div>
             </div>
+            <div class="col-md-7"><div class="stat-card h-100"><h6 class="fw-bold mb-3">Recently Added</h6><div style="max-height: 500px; overflow-y: auto;"><table class="table table-sm table-striped"><thead><tr><th>ID</th><th>Name</th><th>Troop</th></tr></thead><tbody id="regTable"></tbody></table></div></div></div>
+        </div>
+    </div>
+
+    <div id="sec-directory" class="section animate__animated animate__fadeIn" style="display:none;">
+        <div class="stat-card"><div class="input-group input-group-lg"><input type="text" id="searchDir" class="form-control" placeholder="Search..." onkeyup="filterDirectory()"><button class="btn btn-outline-secondary" onclick="document.getElementById('searchDir').value=''; filterDirectory()">Clear</button></div></div>
+        <div class="stat-card"><div class="table-responsive"><table class="table align-middle table-hover"><thead><tr><th>ID</th><th>Name</th><th>Troop</th><th>Status</th><th>Action</th></tr></thead><tbody id="dirTable"></tbody></table></div></div>
+    </div>
+
+    <div id="sec-staff" class="section animate__animated animate__fadeIn" style="display:none;">
+        <div class="row">
+            <div class="col-md-4"><div class="stat-card"><h5 class="fw-bold">Add Staff</h5><input type="email" id="stfEmail" class="form-control mb-2" placeholder="Email"><input type="text" id="stfPass" class="form-control mb-2" placeholder="Password"><select id="stfRole" class="form-select mb-2"><option value="scanner">Scanner</option><option value="moderator">Moderator</option><option value="admin">Admin</option></select><button onclick="addStaff()" class="btn btn-dark w-100 fw-bold">Create Account</button></div></div>
             <div class="col-md-8"><div class="stat-card"><table class="table align-middle"><tbody id="staffTable"></tbody></table></div></div>
         </div>
     </div>
@@ -159,8 +130,7 @@
                 <div class="col-md-4 d-flex align-items-end"><button onclick="exportLogsPDF()" class="btn btn-danger w-100 fw-bold"><i class="bi bi-file-pdf"></i> Log Report</button></div>
                 <div class="col-md-4 d-flex align-items-end"><button onclick="exportScoutRegistryPDF()" class="btn btn-dark w-100 fw-bold"><i class="bi bi-people-fill"></i> Scout Registry</button></div>
             </div>
-            <hr>
-            <div class="table-responsive" style="max-height:500px"><table class="table table-sm table-hover" id="logsTableFull"><thead><tr><th>Time</th><th>Scout</th><th>Event</th><th>Action</th><th>Scanner</th></tr></thead><tbody id="logsTable"></tbody></table></div>
+            <hr><div class="table-responsive" style="max-height:500px"><table class="table table-sm table-hover" id="logsTableFull"><thead><tr><th>Time</th><th>Scout</th><th>Event</th><th>Action</th><th>Scanner</th></tr></thead><tbody id="logsTable"></tbody></table></div>
         </div>
     </div>
 </div>
@@ -168,7 +138,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getAuth, signOut, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getDatabase, ref, onValue, set, push, serverTimestamp, get, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
@@ -184,123 +154,75 @@
     const secondaryApp = initializeApp(firebaseConfig, "Secondary");
     const secondaryAuth = getAuth(secondaryApp);
 
-    // --- ALERT LOGIC (NEW) ---
-    onValue(ref(db, 'alerts'), (snap) => {
-        const tbody = document.getElementById('alertsTableBody');
-        const badge = document.getElementById('alertBadge');
-        tbody.innerHTML = "";
-        
-        if (snap.exists()) {
-            const alerts = Object.entries(snap.val());
-            badge.innerText = alerts.length;
-            badge.style.display = 'inline-block';
-            badge.classList.add('badge-pulse');
+    let currentUserRole = 'moderator'; // Default
 
-            alerts.reverse().forEach(([key, alert]) => {
-                tbody.innerHTML += `
-                    <tr class="alert-card">
-                        <td class="fw-bold text-danger">${new Date(alert.timestamp).toLocaleTimeString()}</td>
-                        <td>
-                            <strong class="text-danger">MISSING SCOUT FOUND!</strong><br>
-                            ${alert.scoutName} (${alert.scoutID})
-                        </td>
-                        <td>${alert.location}</td>
-                        <td><button class="btn btn-sm btn-dark" onclick="resolveAlert('${key}', '${alert.scoutKey}')">Mark Safe</button></td>
-                    </tr>
-                `;
-            });
-            // Show toast if new alert comes while on another tab
-            Swal.fire({toast:true, position:'top-end', icon:'warning', title:'⚠️ Missing Scout Detected!', showConfirmButton:false, timer:4000});
-        } else {
-            badge.style.display = 'none';
-            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">No active alerts.</td></tr>`;
+    // --- AUTH & ROLE CHECK ---
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) window.location.href = "index.html";
+        else {
+            // Get Role from DB
+            const snap = await get(ref(db, `users/${user.uid}`));
+            if (snap.exists()) {
+                currentUserRole = snap.val().role;
+                applyPermissions();
+            }
         }
     });
 
-    window.resolveAlert = async (alertKey, scoutKey) => {
-        // Mark scout safe AND delete alert
-        await update(ref(db, `scouts/${scoutKey}`), { isMissing: false });
-        await remove(ref(db, `alerts/${alertKey}`));
-        Swal.fire('Resolved', 'Scout marked as safe.', 'success');
-    }
-
-    window.clearAlerts = async () => {
-        await remove(ref(db, 'alerts'));
-        Swal.fire('Cleared', 'All alerts removed.', 'success');
-    }
-
-    // --- MARK MISSING TOGGLE ---
-    window.toggleMissing = async (key, currentStatus, name) => {
-        const newStatus = !currentStatus;
-        await update(ref(db, `scouts/${key}`), { isMissing: newStatus });
-        
-        if(newStatus) {
-            Swal.fire({icon:'warning', title:'Marked Missing!', text:`Alert sent to all scanners for ${name}.`});
+    function applyPermissions() {
+        if (currentUserRole === 'moderator') {
+            // Hide Admin-Only Sections
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+            // If they try to access restricted pages, redirect to dashboard
+            showSection('overview');
         } else {
-            Swal.fire('Marked Safe', `${name} is now safe.`, 'success');
+            // Admin sees everything
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block'); // Or flex/initial depending on layout
+            // Specifically for sidebar links which are block by default or list items
+             document.querySelectorAll('.sidebar .nav-link.admin-only').forEach(el => el.style.display = 'block');
+             // Buttons
+             document.querySelectorAll('button.admin-only').forEach(el => el.style.display = 'inline-block');
         }
     }
 
-    // --- NORMAL FUNCTIONS (Bulk, Staff, Events, Etc) ---
+    // --- ALERT LOGIC ---
+    onValue(ref(db, 'alerts'), (snap) => {
+        if(currentUserRole !== 'admin') return; // Mods don't see alerts
+        const tbody = document.getElementById('alertsTableBody'); const badge = document.getElementById('alertBadge'); tbody.innerHTML = "";
+        if (snap.exists()) {
+            const alerts = Object.entries(snap.val()); badge.innerText = alerts.length; badge.style.display = 'inline-block'; badge.classList.add('badge-pulse');
+            alerts.reverse().forEach(([key, alert]) => { tbody.innerHTML += `<tr class="alert-card"><td class="fw-bold text-danger">${new Date(alert.timestamp).toLocaleTimeString()}</td><td><strong class="text-danger">MISSING SCOUT FOUND!</strong><br>${alert.scoutName} (${alert.scoutID})</td><td>${alert.location}</td><td><button class="btn btn-sm btn-dark" onclick="resolveAlert('${key}', '${alert.scoutKey}')">Mark Safe</button></td></tr>`; });
+            Swal.fire({toast:true, position:'top-end', icon:'warning', title:'⚠️ Missing Scout Detected!', showConfirmButton:false, timer:4000});
+        } else { badge.style.display = 'none'; tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">No active alerts.</td></tr>`; }
+    });
+
+    window.resolveAlert = async (alertKey, scoutKey) => { await update(ref(db, `scouts/${scoutKey}`), { isMissing: false }); await remove(ref(db, `alerts/${alertKey}`)); Swal.fire('Resolved', 'Scout marked as safe.', 'success'); }
+    window.clearAlerts = async () => { await remove(ref(db, 'alerts')); Swal.fire('Cleared', 'All alerts removed.', 'success'); }
+    window.toggleMissing = async (key, currentStatus, name) => { const newStatus = !currentStatus; await update(ref(db, `scouts/${key}`), { isMissing: newStatus }); if(newStatus) Swal.fire({icon:'warning', title:'Marked Missing!'}); else Swal.fire('Marked Safe', `${name} is safe.`, 'success'); }
+
+    // --- NORMAL FUNCS ---
     let allScouts=[], allLogs=[], allEvents=[], lastBatchScouts=[];
     const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
     document.getElementById('troopNumberInput').addEventListener('input', (e) => { document.getElementById('previewTroop').innerText = e.target.value || 'XX'; });
 
     window.processBulk = async function() {
+        if(currentUserRole !== 'admin') return;
         const troopNum = document.getElementById('troopNumberInput').value.trim(); const text = document.getElementById('bulkText').value;
         if(!troopNum || !text.trim()) return Swal.fire('Error', 'Missing Inputs!', 'error');
-        const lines = text.trim().split('\n'); document.getElementById('bulkProgress').style.display = 'flex';
-        const progressBar = document.getElementById('bulkProgress').querySelector('.progress-bar');
+        const lines = text.trim().split('\n'); document.getElementById('bulkProgress').style.display = 'flex'; const progressBar = document.getElementById('bulkProgress').querySelector('.progress-bar');
         lastBatchScouts = []; const counterRef = ref(db, 'system/scoutCounter'); const snap = await get(counterRef); let idCounter = snap.exists() ? snap.val() + 1 : 1;
         let processedCount = 0;
-        for(let line of lines) {
-            let [name, troop, district] = line.split(',');
-            if(name && name.trim()) {
-                const seq = String(idCounter).padStart(3, '0'); const displayID = `KG${troopNum}/${seq}`; const safeKey = `KG${troopNum}_${seq}`;
-                const scoutObj = { id: displayID, name: name.trim(), troop: troop ? troop.trim() : `Troop ${troopNum}`, district: district ? district.trim() : '-', points: 0, isMissing: false, regDate: serverTimestamp() };
-                await set(ref(db, `scouts/${safeKey}`), scoutObj); lastBatchScouts.push(scoutObj); idCounter++;
-            }
-            processedCount++; progressBar.style.width = (processedCount / lines.length * 100) + "%";
-        }
+        for(let line of lines) { let [name, troop, district] = line.split(','); if(name && name.trim()) { const seq = String(idCounter).padStart(3, '0'); const displayID = `KG${troopNum}/${seq}`; const safeKey = `KG${troopNum}_${seq}`; const scoutObj = { id: displayID, name: name.trim(), troop: troop ? troop.trim() : `Troop ${troopNum}`, district: district ? district.trim() : '-', points: 0, isMissing: false, regDate: serverTimestamp() }; await set(ref(db, `scouts/${safeKey}`), scoutObj); lastBatchScouts.push(scoutObj); idCounter++; } processedCount++; progressBar.style.width = (processedCount / lines.length * 100) + "%"; }
         await set(counterRef, idCounter); document.getElementById('bulkProgress').style.display = 'none'; document.getElementById('bulkText').value = ''; document.getElementById('btnManualDownload').disabled = false;
         Swal.fire({ icon: 'success', title: 'Complete!', text: 'Downloading IDs...', timer: 2000, showConfirmButton: false }); downloadBatchPDF(lastBatchScouts);
     }
 
-    window.downloadBatchPDF = function(scoutList) {
-        if(!scoutList || scoutList.length === 0) return; const { jsPDF } = window.jspdf; const doc = new jsPDF(); 
-        const cardW = 45; const cardH = 65; const marginX = 15; const marginY = 15; const gap = 2; let col = 0; let row = 0; const qrDiv = document.getElementById('qr-hidden');
-        scoutList.forEach((s, i) => {
-            if(i > 0 && i % 16 === 0) { doc.addPage(); col = 0; row = 0; }
-            qrDiv.innerHTML = ""; new QRCode(qrDiv, { text: s.id, width: 100, height: 100 }); const img = qrDiv.querySelector('canvas').toDataURL("image/png");
-            const curX = marginX + (col * (cardW + gap)); const curY = marginY + (row * (cardH + gap));
-            doc.setLineWidth(0.1); doc.rect(curX, curY, cardW, cardH); doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.text("SCOUT PASS", curX + (cardW/2), curY + 8, {align:'center'});
-            doc.addImage(img, 'PNG', curX + (cardW - 25)/2, curY + 12, 25, 25); doc.setFontSize(11); doc.text(s.id, curX + (cardW/2), curY + 44, {align:'center'});
-            doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.text(s.name.substring(0,18), curX + (cardW/2), curY + 52, {align:'center'});
-            doc.setFontSize(7); doc.setTextColor(100); doc.text(s.troop.substring(0,25), curX + (cardW/2), curY + 58, {align:'center'}); doc.setTextColor(0);
-            col++; if(col >= 4) { col = 0; row++; }
-        }); doc.save(`Scout_IDs_Batch.pdf`);
-    }
+    window.downloadBatchPDF = function(scoutList) { if(!scoutList || scoutList.length === 0) return; const { jsPDF } = window.jspdf; const doc = new jsPDF(); const cardW = 45; const cardH = 65; const marginX = 15; const marginY = 15; const gap = 2; let col = 0; let row = 0; const qrDiv = document.getElementById('qr-hidden'); scoutList.forEach((s, i) => { if(i > 0 && i % 16 === 0) { doc.addPage(); col = 0; row = 0; } qrDiv.innerHTML = ""; new QRCode(qrDiv, { text: s.id, width: 100, height: 100 }); const img = qrDiv.querySelector('canvas').toDataURL("image/png"); const curX = marginX + (col * (cardW + gap)); const curY = marginY + (row * (cardH + gap)); doc.setLineWidth(0.1); doc.rect(curX, curY, cardW, cardH); doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.text("SCOUT PASS", curX + (cardW/2), curY + 8, {align:'center'}); doc.addImage(img, 'PNG', curX + (cardW - 25)/2, curY + 12, 25, 25); doc.setFontSize(11); doc.text(s.id, curX + (cardW/2), curY + 44, {align:'center'}); doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.text(s.name.substring(0,18), curX + (cardW/2), curY + 52, {align:'center'}); doc.setFontSize(7); doc.setTextColor(100); doc.text(s.troop.substring(0,25), curX + (cardW/2), curY + 58, {align:'center'}); doc.setTextColor(0); col++; if(col >= 4) { col = 0; row++; } }); doc.save(`Scout_IDs_Batch.pdf`); }
     window.downloadLastBatch = () => downloadBatchPDF(lastBatchScouts);
 
-    onValue(ref(db, 'scouts'), (s) => {
-        allScouts = s.exists() ? Object.values(s.val()) : []; document.getElementById('statTotal').innerText = allScouts.length;
-        let h = ''; allScouts.reverse().slice(0,100).forEach(sc => { 
-            // Replace / with _ for key
-            const safeKey = sc.id.replace('/', '_');
-            const btnColor = sc.isMissing ? 'btn-danger' : 'btn-outline-secondary';
-            const btnText = sc.isMissing ? 'Found?' : 'Missing';
-            h += `<tr><td>${sc.id}</td><td>${sc.name}</td><td>${sc.troop}</td>
-            <td>${sc.isMissing?'<span class="badge bg-danger">MISSING</span>':'<span class="badge bg-success">Active</span>'}</td>
-            <td><button class="btn btn-sm ${btnColor}" onclick="toggleMissing('${safeKey}', ${sc.isMissing}, '${sc.name}')">${btnText}</button></td></tr>`; 
-        }); 
-        document.getElementById('dirTable').innerHTML = h; document.getElementById('regTable').innerHTML = h; 
-    });
-
-    onValue(ref(db, 'users'), (s) => {
-        const tbody = document.getElementById('staffTable'); tbody.innerHTML = "";
-        if (s.exists()) { Object.entries(s.val()).forEach(([uid, u]) => { tbody.innerHTML += `<tr><td>${u.email}</td><td><span class="badge bg-dark">${u.role}</span></td><td><button class="btn btn-sm btn-outline-danger" onclick="removeUser('${uid}')"><i class="bi bi-trash"></i></button></td></tr>`; }); }
-    });
+    onValue(ref(db, 'scouts'), (s) => { allScouts = s.exists() ? Object.values(s.val()) : []; document.getElementById('statTotal').innerText = allScouts.length; let h = ''; allScouts.reverse().slice(0,100).forEach(sc => { const safeKey = sc.id.replace('/', '_'); const btnColor = sc.isMissing ? 'btn-danger' : 'btn-outline-secondary'; const btnText = sc.isMissing ? 'Found?' : 'Missing'; h += `<tr><td>${sc.id}</td><td>${sc.name}</td><td>${sc.troop}</td><td>${sc.isMissing?'<span class="badge bg-danger">MISSING</span>':'<span class="badge bg-success">Active</span>'}</td><td><button class="btn btn-sm ${btnColor}" onclick="toggleMissing('${safeKey}', ${sc.isMissing}, '${sc.name}')">${btnText}</button></td></tr>`; }); document.getElementById('dirTable').innerHTML = h; document.getElementById('regTable').innerHTML = h; });
+    onValue(ref(db, 'users'), (s) => { const tbody = document.getElementById('staffTable'); tbody.innerHTML = ""; if (s.exists()) { Object.entries(s.val()).forEach(([uid, u]) => { tbody.innerHTML += `<tr><td>${u.email}</td><td><span class="badge bg-dark">${u.role}</span></td><td><button class="btn btn-sm btn-outline-danger" onclick="removeUser('${uid}')"><i class="bi bi-trash"></i></button></td></tr>`; }); } });
 
     function renderCards() {
         const container = document.getElementById('liveEventCards'); container.innerHTML = "";
@@ -317,17 +239,18 @@
     onValue(ref(db, 'logs'), (s) => { allLogs = s.exists() ? Object.values(s.val()) : []; renderLogsTable(allLogs.reverse()); renderCards(); });
     onValue(ref(db, 'events'), (s) => { const data = s.val(); allEvents = data ? Object.entries(data).map(([key, val]) => ({key, ...val})) : []; let h = ''; allEvents.forEach(e => { h += `<div class="d-flex justify-content-between border-bottom p-2"><span>${e.name}</span><button onclick="removeEvent('${e.key}')" class="btn btn-sm text-danger"><i class="bi bi-trash"></i></button></div>`; }); document.getElementById('eventsList').innerHTML = h; renderCards(); });
 
-    window.addStaff = async () => { const e=document.getElementById('stfEmail').value, p=document.getElementById('stfPass').value, r=document.getElementById('stfRole').value; if(e&&p) { const c = await createUserWithEmailAndPassword(secondaryAuth, e, p); await set(ref(db, `users/${c.user.uid}`), { email:e, role:r }); Toast.fire({icon:'success', title:'Staff Added'}); } }
-    window.removeUser = (uid) => { remove(ref(db, `users/${uid}`)); Toast.fire({icon:'success', title:'User Removed'}); }
-    window.addEvent = async () => { const n=document.getElementById('evtName').value, b=document.getElementById('evtButtons').value.split(','), p=document.getElementById('evtPoints').value; if(n) await push(ref(db, 'events'), {name:n, buttons:b, points:p, active:true}); }
-    window.removeEvent = (k) => remove(ref(db, `events/${k}`));
+    window.addStaff = async () => { if(currentUserRole!=='admin') return; const e=document.getElementById('stfEmail').value, p=document.getElementById('stfPass').value, r=document.getElementById('stfRole').value; if(e&&p) { const c = await createUserWithEmailAndPassword(secondaryAuth, e, p); await set(ref(db, `users/${c.user.uid}`), { email:e, role:r }); Toast.fire({icon:'success', title:'Staff Added'}); } }
+    window.removeUser = (uid) => { if(currentUserRole!=='admin') return; remove(ref(db, `users/${uid}`)); Toast.fire({icon:'success', title:'User Removed'}); }
+    window.addEvent = async () => { const n=document.getElementById('evtName').value, b=document.getElementById('evtButtons').value.split(','), p=document.getElementById('evtPoints').value; if(n) await push(ref(db, 'events'), {name:n, buttons:b, points:p, active:true}); Toast.fire({icon:'success', title:'Event Added'}); }
+    window.removeEvent = (k) => { if(currentUserRole!=='admin') return; remove(ref(db, `events/${k}`)); }
     window.showSection = (id) => { document.querySelectorAll('.section').forEach(d=>d.style.display='none'); document.getElementById('sec-'+id).style.display='block'; document.getElementById('pageTitle').innerText = id.toUpperCase(); }
     window.logout = () => signOut(auth).then(()=>window.location.href="index.html");
-    window.exportLogsPDF = () => { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.autoTable({ head: [['Time', 'Scout', 'Event']], body: allLogs.map(l => [new Date(l.timestamp).toLocaleTimeString(), l.scoutName, l.eventName]) }); doc.save(`Logs.pdf`); }
-    window.exportScoutRegistryPDF = function() { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.autoTable({ head: [['ID', 'Name']], body: allScouts.map(s => [s.id, s.name]) }); doc.save('Registry.pdf'); }
-    window.triggerSOS = async () => { const {value}=await Swal.fire({title:'BROADCAST', input:'text', confirmButtonColor:'#ff7675'}); if(value) set(ref(db,'system/broadcast'),{message:value, timestamp:serverTimestamp()}); }
+    window.exportLogsPDF = () => { if(currentUserRole!=='admin') return; const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.autoTable({ head: [['Time', 'Scout', 'Event']], body: allLogs.map(l => [new Date(l.timestamp).toLocaleTimeString(), l.scoutName, l.eventName]) }); doc.save(`Logs.pdf`); }
+    window.exportScoutRegistryPDF = function() { if(currentUserRole!=='admin') return; const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.autoTable({ head: [['ID', 'Name']], body: allScouts.map(s => [s.id, s.name]) }); doc.save('Registry.pdf'); }
+    window.triggerSOS = async () => { if(currentUserRole!=='admin') return; const {value}=await Swal.fire({title:'BROADCAST', input:'text', confirmButtonColor:'#ff7675'}); if(value) set(ref(db,'system/broadcast'),{message:value, timestamp:serverTimestamp()}); }
     window.filterDirectory = function() { const term = document.getElementById('searchDir').value.trim(); document.querySelectorAll('#dirTable tr').forEach(row => { row.style.display = (term === '' || row.innerText.toLowerCase().includes(term.toLowerCase())) ? '' : 'none'; }); }
     window.filterLogsTable = function() { const filter = document.getElementById('reportEventFilter').value; renderLogsTable(filter ? allLogs.filter(l => l.eventName === filter) : allLogs); }
+    window.lockSystem = function() { /* Only Admin can lock but pin required anyway */ document.getElementById('lockOverlay').style.display='flex'; setTimeout(()=>document.getElementById('lockOverlay').style.opacity='1',10); }
 </script>
 </body>
 </html>
