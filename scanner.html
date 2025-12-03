@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ScoutPass Scanner V26</title>
+    <title>ScoutPass Scanner V27</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
@@ -13,28 +13,36 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        body { font-family: 'Poppins', sans-serif; background-color: #f2f2f2; color: #333; height: 100vh; overflow: hidden; }
+        body { font-family: 'Poppins', sans-serif; background-color: #f8f9fa; color: #333; height: 100vh; overflow: hidden; }
 
-        /* 1. LOGIN SCREEN */
+        /* LOGIN */
         #loginScreen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: white; z-index: 2000; display: flex; flex-direction: column;
             align-items: center; justify-content: center; padding: 30px;
         }
 
-        /* 2. MAIN SCANNER SCREEN (Based on your UI) */
-        #mainScreen { display: none; height: 100%; flex-direction: column; padding: 20px; max-width: 500px; margin: auto; }
+        /* MAIN SCREEN */
+        #mainScreen { display: none; height: 100%; flex-direction: column; padding: 20px; max-width: 500px; margin: auto; overflow-y: auto; }
         
-        .header-title { text-align: center; color: #1877F2; font-weight: 700; font-size: 1.2rem; margin-bottom: 20px; letter-spacing: 1px; }
+        .header-title { text-align: center; color: #1877F2; font-weight: 700; font-size: 1.2rem; margin-bottom: 15px; letter-spacing: 1px; }
 
+        /* CAMERA AREA - No Guidelines */
         .camera-container {
-            width: 100%; aspect-ratio: 1/1; background: #2c3e50; border-radius: 20px;
+            width: 100%; aspect-ratio: 1/1; background: #000; border-radius: 20px;
             overflow: hidden; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            margin-bottom: 20px; border: 4px solid white;
+            margin-bottom: 10px; border: 4px solid white;
         }
         #reader { width: 100%; height: 100%; object-fit: cover; }
+        /* Hide the default scan region box */
+        #reader__scan_region { display: none !important; } 
         
-        .form-group label { font-size: 0.8rem; font-weight: 600; color: #777; margin-bottom: 5px; margin-left: 5px; }
+        /* CONTROLS (Flash & Cam Select) */
+        .camera-controls { display: flex; gap: 10px; margin-bottom: 15px; }
+        .btn-flash { background: #333; color: white; border: none; padding: 10px 15px; border-radius: 10px; }
+        .btn-flash.active { background: #f1c40f; color: black; }
+        .cam-select { flex-grow: 1; border: none; padding: 10px; border-radius: 10px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+
         .custom-input {
             border: none; background: white; padding: 15px; border-radius: 12px;
             width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.05); font-weight: 600; margin-bottom: 15px;
@@ -43,22 +51,22 @@
         .btn-scan-trigger {
             background: #1877F2; color: white; border: none; padding: 18px;
             width: 100%; border-radius: 30px; font-weight: 700; font-size: 1.1rem;
-            box-shadow: 0 5px 20px rgba(24, 119, 242, 0.3); margin-top: auto;
+            box-shadow: 0 5px 20px rgba(24, 119, 242, 0.3);
         }
         .btn-scan-trigger:active { transform: scale(0.98); }
 
-        /* 3. SCOUT DETAILS MODAL (Variant 1 Style) */
+        /* RESULTS MODAL */
         #resultModal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 3000; display: none;
-            align-items: center; justify-content: center; padding: 20px;
+            background: rgba(0,0,0,0.6); z-index: 3000; display: none;
+            align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px);
         }
         .result-card {
             background: white; width: 100%; max-width: 380px; border-radius: 25px;
             padding: 30px 20px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            animation: slideUp 0.3s ease-out;
+            animation: slideUp 0.2s ease-out;
         }
-        @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
         .avatar-circle {
             width: 90px; height: 90px; background: #ffeaa7; color: #d35400;
@@ -66,6 +74,8 @@
             display: flex; align-items: center; justify-content: center; border: 4px solid white;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
+        .bonus-avatar { background: #a29bfe; color: #fff; } /* Purple for Bonus */
+
         .scout-name { font-size: 1.4rem; font-weight: 700; color: #333; margin-bottom: 2px; }
         .scout-info { font-size: 0.9rem; color: #888; margin-bottom: 25px; }
         
@@ -73,11 +83,10 @@
             width: 100%; padding: 14px; border-radius: 50px; font-weight: 600; margin-bottom: 10px;
             border: none; font-size: 1rem; transition: 0.2s;
         }
-        .btn-primary-action { background: #1877F2; color: white; box-shadow: 0 4px 15px rgba(24, 119, 242, 0.2); }
+        .btn-primary-action { background: #1877F2; color: white; }
         .btn-secondary-action { background: white; color: #333; border: 1px solid #ddd; }
-        .btn-cancel { color: #aaa; background: none; margin-top: 10px; font-size: 0.9rem; }
 
-        /* 4. MISSING ALERT (Red Screen) */
+        /* MISSING ALERT */
         #missingAlert {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #FF3B30; color: white; z-index: 4000; display: none;
@@ -92,7 +101,7 @@
             font-weight: 700; border: none; margin-top: 40px; width: 100%; max-width: 300px;
         }
 
-        /* 5. OFFLINE & LOCKED */
+        /* LOCKED */
         .system-locked {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255, 59, 48, 0.95); z-index: 5000; display: none;
@@ -105,7 +114,6 @@
     <div id="lockedOverlay" class="system-locked">
         <i class="bi bi-lock-fill" style="font-size: 3rem;"></i>
         <h3 class="mt-3 fw-bold">SYSTEM LOCKED</h3>
-        <p>Admin has paused scanning</p>
     </div>
 
     <div id="loginScreen">
@@ -121,64 +129,51 @@
 
         <div class="camera-container">
             <div id="reader"></div>
-            <div id="cameraPlaceholder" class="d-flex align-items-center justify-content-center h-100 text-white-50">
-                <span>Camera Inactive</span>
-            </div>
         </div>
 
-        <div class="form-group">
-            <label>EVENT</label>
-            <select id="eventSelect" class="custom-input form-select" onchange="enableScanning()">
-                <option value="" disabled selected>Select Event</option>
-            </select>
+        <div class="camera-controls">
+            <button class="btn-flash" id="flashBtn" onclick="toggleFlash()"><i class="bi bi-lightning-fill"></i></button>
+            <select id="cameraSelect" class="cam-select" onchange="changeCamera()">
+                </select>
         </div>
 
-        <div class="form-group">
-            <label>MANUAL ID</label>
-            <input type="text" id="manualInput" class="custom-input" placeholder="Enter ID Manually">
-        </div>
+        <select id="eventSelect" class="custom-input form-select" onchange="enableScanning()">
+            <option value="" disabled selected>Select Event</option>
+        </select>
 
-        <button onclick="handleManualSubmit()" class="btn-scan-trigger" id="scanBtn">
+        <input type="text" id="manualInput" class="custom-input" placeholder="Enter ID Manually">
+
+        <button onclick="handleManualSubmit()" class="btn-scan-trigger">
             <i class="bi bi-qr-code-scan me-2"></i> SCAN / SUBMIT
         </button>
         
         <div class="text-center mt-3">
-            <small class="text-muted" onclick="switchCamera()">Switch Camera</small> | 
             <small class="text-danger fw-bold" onclick="staffLogout()">Logout</small>
         </div>
     </div>
 
     <div id="resultModal">
         <div class="result-card">
-            <div class="d-flex align-items-center mb-3 text-secondary" onclick="closeModal()">
-                <i class="bi bi-arrow-left fs-4"></i> <span class="ms-2 fw-bold">Scout Details</span>
-            </div>
+            <div id="scoutIcon" class="avatar-circle"><i class="bi bi-person-fill"></i></div>
             
-            <div class="avatar-circle"><i class="bi bi-person-fill"></i></div>
+            <h3 class="scout-name" id="resName">...</h3>
+            <p class="scout-info" id="resInfo">...</p>
             
-            <h3 class="scout-name" id="resName">Alex Johnson</h3>
-            <p class="scout-info">ID: <span id="resID">123456</span><br><span id="resTroop">Troop 73</span></p>
-            
-            <div class="text-start fw-bold mb-2 text-secondary" style="font-size:0.8rem;">Event Actions</div>
-            <div id="dynamicButtons">
-                </div>
-            
-            <button onclick="closeModal()" class="btn-cancel border-0">Cancel</button>
+            <div id="dynamicButtons"></div>
+            <button onclick="closeModal()" class="btn-cancel border-0 bg-white text-muted mt-2">Cancel</button>
         </div>
     </div>
 
     <div id="missingAlert">
         <div class="fw-bold fs-5 opacity-75">🚨 ALERT</div>
         <h1 class="fw-bold mt-2">MISSING SCOUT<br>FOUND!</h1>
-        
         <div class="alert-avatar"><i class="bi bi-exclamation-triangle-fill"></i></div>
-        
-        <h2 class="fw-bold" id="misName">Alexandre Dumas</h2>
-        <p class="opacity-75" id="misTroop">Cimarron Council / Troop 451</p>
-        
+        <h2 class="fw-bold" id="misName">...</h2>
+        <p class="opacity-75" id="misTroop">...</p>
         <button onclick="closeMissingAlert()" class="btn-dismiss">Dismiss</button>
     </div>
 
+    <audio id="beepSound" src="data:audio/wav;base64,UklGRl9vT1dAVEZNVZhRnR..." style="display:none;"></audio> 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -197,17 +192,33 @@
 
         let html5QrCode;
         let selectedEvent = null;
-        let currentScout = null;
         let cameras = [];
-        let camId = 0;
+        let isFlashOn = false;
 
-        // --- AUTH & SETUP ---
+        // BEEP FUNCTION
+        function playBeep() {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.type = "sine";
+            oscillator.frequency.value = 1000;
+            gainNode.gain.value = 0.1;
+            oscillator.start();
+            setTimeout(() => oscillator.stop(), 150); // Short beep
+            
+            // Haptic Feedback
+            if (navigator.vibrate) navigator.vibrate(200);
+        }
+
+        // AUTH
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('mainScreen').style.display = 'flex';
                 loadEvents();
-                startCamera();
+                initScanner();
             } else {
                 document.getElementById('loginScreen').style.display = 'flex';
                 document.getElementById('mainScreen').style.display = 'none';
@@ -221,7 +232,7 @@
         }
         window.staffLogout = () => signOut(auth);
 
-        // --- SYSTEM LOCK ---
+        // LOCK SYSTEM
         onValue(ref(db, 'system_settings/scanning_active'), (s) => {
             const active = s.val();
             document.getElementById('lockedOverlay').style.display = active ? 'none' : 'flex';
@@ -229,7 +240,7 @@
             if(active && html5QrCode) html5QrCode.resume();
         });
 
-        // --- EVENTS ---
+        // EVENTS
         function loadEvents() {
             onValue(ref(db, 'events'), (s) => {
                 const sel = document.getElementById('eventSelect');
@@ -247,109 +258,140 @@
                 }
             });
         }
-
         window.enableScanning = () => {
             const sel = document.getElementById('eventSelect');
-            const idx = sel.selectedIndex;
-            if (idx > 0) {
+            if(sel.selectedIndex > 0) {
                 selectedEvent = {
                     id: sel.value,
-                    name: sel.options[idx].text,
-                    buttons: sel.options[idx].dataset.buttons.split(',')
+                    name: sel.options[sel.selectedIndex].text,
+                    buttons: sel.options[sel.selectedIndex].dataset.buttons.split(',')
                 };
             }
         }
 
-        // --- CAMERA ---
-        function startCamera() {
-            Html5Qrcode.getCameras().then(dev => {
-                if (dev && dev.length) {
-                    cameras = dev;
-                    // Prefer back camera
+        // CAMERA SETUP
+        async function initScanner() {
+            try {
+                cameras = await Html5Qrcode.getCameras();
+                const camSel = document.getElementById('cameraSelect');
+                camSel.innerHTML = "";
+                
+                if (cameras && cameras.length) {
+                    cameras.forEach(cam => {
+                        const opt = document.createElement('option');
+                        opt.value = cam.id;
+                        opt.text = cam.label || `Camera ${camSel.length + 1}`;
+                        camSel.appendChild(opt);
+                    });
+
+                    // Auto select back camera
                     const backCam = cameras.find(c => c.label.toLowerCase().includes('back'));
-                    const startCamId = backCam ? backCam.id : cameras[0].id;
+                    camSel.value = backCam ? backCam.id : cameras[0].id;
                     
-                    html5QrCode = new Html5Qrcode("reader");
-                    html5QrCode.start(
-                        startCamId, 
-                        { fps: 10, qrbox: { width: 250, height: 250 } },
-                        (txt) => processScan(txt),
-                        (err) => {}
-                    );
-                    document.getElementById('cameraPlaceholder').style.display = 'none';
+                    startCamera(camSel.value);
                 }
-            }).catch(err => console.error(err));
+            } catch (e) { console.error(e); }
         }
 
-        window.switchCamera = () => {
-            if(cameras.length < 2) return Swal.fire('Info', 'Only one camera detected', 'info');
-            camId = (camId + 1) % cameras.length;
-            html5QrCode.stop().then(() => {
-                html5QrCode.start(cameras[camId].id, { fps: 10, qrbox: { width: 250, height: 250 } }, (txt) => processScan(txt), () => {});
+        function startCamera(camId) {
+            html5QrCode = new Html5Qrcode("reader");
+            // No qrbox passed to remove guidelines
+            const config = { fps: 10, aspectRatio: 1.0 }; 
+            
+            html5QrCode.start(
+                camId, 
+                config, 
+                (txt) => processScan(txt), 
+                (err) => {}
+            );
+        }
+
+        window.changeCamera = () => {
+            const id = document.getElementById('cameraSelect').value;
+            html5QrCode.stop().then(() => startCamera(id));
+        }
+
+        window.toggleFlash = () => {
+            if(!html5QrCode) return;
+            isFlashOn = !isFlashOn;
+            html5QrCode.applyVideoConstraints({
+                advanced: [{ torch: isFlashOn }]
+            }).catch(() => {
+                isFlashOn = !isFlashOn;
+                Swal.fire({toast:true, position:'top', title:'Flash not supported on this camera'});
             });
+            document.getElementById('flashBtn').classList.toggle('active');
         }
 
-        // --- SCAN PROCESSING ---
         window.handleManualSubmit = () => {
             const val = document.getElementById('manualInput').value;
             if(val) processScan(val);
         }
 
+        // SCAN LOGIC
         async function processScan(code) {
-            // Check if Event Selected
-            if (!selectedEvent) {
-                if(html5QrCode) html5QrCode.pause();
-                await Swal.fire({ icon: 'warning', title: 'Select Event First', text: 'Please select an event from the dropdown.' });
-                if(html5QrCode) html5QrCode.resume();
-                return;
-            }
-
+            if (!selectedEvent) return Swal.fire({toast:true, position:'top', icon:'warning', title:'Select an Event first!'});
+            
+            playBeep(); // BEEP & VIBRATE
             if(html5QrCode) html5QrCode.pause();
 
-            // Check Bonus
+            // BONUS CHECK
             if (code.startsWith("BONUS:")) {
-                // ... (Same Bonus Logic as before if needed)
-                Swal.fire('Bonus', 'Bonus tokens not implemented in this UI yet', 'info').then(() => html5QrCode.resume());
+                const codeKey = code.split(':')[1];
+                const snap = await get(ref(db, `special_codes/${codeKey}`));
+                
+                if (snap.exists()) {
+                    const bonus = snap.val();
+                    showBonusModal(bonus, code);
+                } else {
+                    Swal.fire('Invalid', 'Bonus Token not found', 'error').then(()=>html5QrCode.resume());
+                }
                 return;
             }
 
-            // Fetch Scout
+            // SCOUT CHECK
             const safeKey = code.replace('/', '_');
             const snap = await get(ref(db, `scouts/${safeKey}`));
 
             if (snap.exists()) {
-                currentScout = snap.val();
-                
-                // MISSING CHECK
-                if (currentScout.isMissing) {
-                    showMissingAlert(currentScout);
+                const scout = snap.val();
+                if (scout.isMissing) {
+                    showMissingAlert(scout);
                 } else {
-                    showResultModal(currentScout, code);
+                    showResultModal(scout, code);
                 }
             } else {
-                Swal.fire({ icon: 'error', title: 'Invalid ID', timer: 1500, showConfirmButton:false }).then(() => html5QrCode.resume());
+                Swal.fire({icon:'error', title:'ID Not Found', timer:1500, showConfirmButton:false}).then(()=>html5QrCode.resume());
             }
-            
             document.getElementById('manualInput').value = "";
         }
 
-        // --- SHOW UI ---
         function showResultModal(scout, rawID) {
             document.getElementById('resName').innerText = scout.name;
-            document.getElementById('resID').innerText = scout.id;
-            document.getElementById('resTroop').innerText = scout.troop;
-            
+            document.getElementById('resInfo').innerHTML = `ID: ${scout.id}<br>${scout.troop}`;
+            document.getElementById('scoutIcon').className = "avatar-circle";
+            document.getElementById('scoutIcon').innerHTML = '<i class="bi bi-person-fill"></i>';
+
             const btnContainer = document.getElementById('dynamicButtons');
             btnContainer.innerHTML = "";
-            
-            selectedEvent.buttons.forEach((btnLabel, index) => {
+            selectedEvent.buttons.forEach((lbl, i) => {
                 const btn = document.createElement('button');
-                btn.innerText = btnLabel;
-                btn.className = index === 0 ? "action-btn btn-primary-action" : "action-btn btn-secondary-action";
-                btn.onclick = () => submitAction(rawID, scout.name, btnLabel);
+                btn.innerText = lbl;
+                btn.className = i === 0 ? "action-btn btn-primary-action" : "action-btn btn-secondary-action";
+                btn.onclick = () => submitAction(rawID, scout.name, lbl);
                 btnContainer.appendChild(btn);
             });
+            document.getElementById('resultModal').style.display = 'flex';
+        }
 
+        function showBonusModal(bonus, rawID) {
+            document.getElementById('resName').innerText = bonus.name;
+            document.getElementById('resInfo').innerText = `${bonus.points} Bonus Points`;
+            document.getElementById('scoutIcon').className = "avatar-circle bonus-avatar";
+            document.getElementById('scoutIcon').innerHTML = '<i class="bi bi-star-fill"></i>';
+
+            const btnContainer = document.getElementById('dynamicButtons');
+            btnContainer.innerHTML = `<button class="action-btn btn-primary-action" onclick="submitAction('${rawID}', '${bonus.name}', 'REDEEM')">Redeem Token</button>`;
             document.getElementById('resultModal').style.display = 'flex';
         }
 
@@ -357,44 +399,26 @@
             document.getElementById('misName').innerText = scout.name;
             document.getElementById('misTroop').innerText = scout.troop;
             document.getElementById('missingAlert').style.display = 'flex';
-            // Vibrate
-            if(navigator.vibrate) navigator.vibrate([500, 200, 500]);
+            if(navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]);
         }
 
-        // --- ACTIONS ---
         window.submitAction = async (rawID, name, action) => {
-            const logEntry = {
+            const log = {
                 scoutID: rawID,
                 scoutName: name,
                 eventName: selectedEvent.name,
-                eventID: selectedEvent.id,
                 action: action,
                 timestamp: serverTimestamp(),
                 scannedBy: auth.currentUser.email
             };
-
-            try {
-                await push(ref(db, 'logs'), logEntry);
-                closeModal();
-                
-                const Toast = Swal.mixin({ toast: true, position: 'bottom', showConfirmButton: false, timer: 2000 });
-                Toast.fire({ icon: 'success', title: `${action} Successful` });
-
-            } catch (e) {
-                Swal.fire('Error', e.message, 'error');
-            }
+            await push(ref(db, 'logs'), log);
+            closeModal();
+            const Toast = Swal.mixin({toast:true, position:'bottom', showConfirmButton:false, timer:1500});
+            Toast.fire({icon:'success', title: 'Done'});
         }
 
-        window.closeModal = () => {
-            document.getElementById('resultModal').style.display = 'none';
-            if(html5QrCode) html5QrCode.resume();
-        }
-
-        window.closeMissingAlert = () => {
-            document.getElementById('missingAlert').style.display = 'none';
-            if(html5QrCode) html5QrCode.resume();
-        }
-
+        window.closeModal = () => { document.getElementById('resultModal').style.display='none'; if(html5QrCode) html5QrCode.resume(); }
+        window.closeMissingAlert = () => { document.getElementById('missingAlert').style.display='none'; if(html5QrCode) html5QrCode.resume(); }
     </script>
 </body>
 </html>
