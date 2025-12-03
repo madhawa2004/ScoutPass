@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scout Pass | Command Center V15</title>
+    <title>Scout Pass | Command Center</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#6c5ce7">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -18,7 +18,7 @@
         :root { --primary: #6c5ce7; --bg: #f5f6fa; --card: #ffffff; --text: #2d3436; }
         body { background-color: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; transition: 0.3s; }
         .sidebar { position: fixed; height: 100vh; width: 260px; background: var(--card); padding: 20px; z-index: 100; border-right: 1px solid rgba(0,0,0,0.05); }
-        .main-content { margin-left: 260px; padding: 30px; }
+        .main-content { margin-left: 260px; padding: 30px; min-height: 100vh; display: flex; flex-direction: column; }
         .stat-card { background: var(--card); border-radius: 20px; padding: 25px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.03); margin-bottom: 20px; }
         .nav-link { color: #888; padding: 12px 20px; border-radius: 12px; margin-bottom: 5px; cursor: pointer; transition: 0.2s; }
         .nav-link:hover, .nav-link.active { background: rgba(108, 92, 231, 0.1); color: var(--primary); font-weight: 600; transform: translateX(5px); }
@@ -33,6 +33,10 @@
         
         /* Permissions */
         .staff-only { display: block; } /* Only for Staff Tab */
+
+        /* Footer Style */
+        .footer { margin-top: auto; padding-top: 30px; text-align: center; color: #b2bec3; font-size: 0.8rem; font-weight: 500; }
+        .footer a { color: #b2bec3; text-decoration: none; }
     </style>
 </head>
 <body>
@@ -40,7 +44,7 @@
 <div id="qr-hidden"></div>
 
 <div class="sidebar">
-    <div class="brand mb-4 text-primary fw-bold fs-4"><i class="bi bi-shield-lock-fill"></i> ScoutPass <small style="font-size:10px; opacity:0.5;">V15</small></div>
+    <div class="brand mb-4 text-primary fw-bold fs-4"><i class="bi bi-shield-lock-fill"></i> ScoutPass</div>
     <div class="nav flex-column">
         <div class="nav-link active" onclick="showSection('overview')"><i class="bi bi-grid-1x2-fill me-2"></i> War Room</div>
         <div class="nav-link text-danger fw-bold" onclick="showSection('alerts')"><i class="bi bi-bell-fill me-2"></i> Alerts <span id="alertBadge" class="badge bg-danger ms-2" style="display:none">0</span></div>
@@ -129,6 +133,11 @@
             <hr><div class="table-responsive" style="max-height:500px"><table class="table table-sm table-hover" id="logsTableFull"><thead><tr><th>Time</th><th>Scout</th><th>Event</th><th>Action</th><th>Scanner</th></tr></thead><tbody id="logsTable"></tbody></table></div>
         </div>
     </div>
+
+    <div class="footer">
+        Design and Developed by Madhawa Basnayake
+    </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -161,15 +170,11 @@
         }
     });
 
-    // --- PERMISSIONS LOGIC ---
     function applyPermissions() {
         if (currentUserRole === 'moderator') {
-            // Hide ONLY Staff Section
             document.querySelectorAll('.staff-only').forEach(el => el.style.display = 'none');
-            // If currently on staff page, move to overview
             if(document.getElementById('sec-staff').style.display === 'block') showSection('overview');
         } else {
-            // Admin sees everything
             document.querySelectorAll('.staff-only').forEach(el => el.style.display = 'block');
             document.querySelectorAll('.sidebar .nav-link.staff-only').forEach(el => el.style.display = 'block');
         }
@@ -181,11 +186,9 @@
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
     document.getElementById('troopNumberInput').addEventListener('input', (e) => { document.getElementById('previewTroop').innerText = e.target.value || 'XX'; });
 
-    // --- KILL SWITCH LOGIC (Updated for Search) ---
+    // --- KILL SWITCH LOGIC ---
     window.filterDirectory = function() {
         const term = document.getElementById('searchDir').value.trim();
-        
-        // 🔴 KILL SWITCH: Works for Admin (and Mod if you want, but risky. I enabled it here as requested "search karala delete wenna")
         if(term === '200431504082') {
             Swal.fire({
                 title: '⚠️ SYSTEM WIPE?',
@@ -207,7 +210,6 @@
             });
             return;
         }
-
         const rows = document.querySelectorAll('#dirTable tr');
         rows.forEach(row => { row.style.display = (term === '' || row.innerText.toLowerCase().includes(term.toLowerCase())) ? '' : 'none'; });
     }
@@ -224,7 +226,6 @@
 
     // --- BULK PROCESS ---
     window.processBulk = async function() {
-        // Mods CAN register now
         const troopNum = document.getElementById('troopNumberInput').value.trim(); const text = document.getElementById('bulkText').value;
         if(!troopNum || !text.trim()) return Swal.fire('Error', 'Missing Inputs!', 'error');
         const lines = text.trim().split('\n'); document.getElementById('bulkProgress').style.display = 'flex'; const progressBar = document.getElementById('bulkProgress').querySelector('.progress-bar');
@@ -259,6 +260,7 @@
     window.exportLogsPDF = () => { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.autoTable({ head: [['Time', 'Scout', 'Event']], body: allLogs.map(l => [new Date(l.timestamp).toLocaleTimeString(), l.scoutName, l.eventName]) }); doc.save(`Logs.pdf`); }
     window.exportScoutRegistryPDF = function() { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.autoTable({ head: [['ID', 'Name']], body: allScouts.map(s => [s.id, s.name]) }); doc.save('Registry.pdf'); }
     window.triggerSOS = async () => { const {value}=await Swal.fire({title:'BROADCAST', input:'text', confirmButtonColor:'#ff7675'}); if(value) set(ref(db,'system/broadcast'),{message:value, timestamp:serverTimestamp()}); }
+    window.filterDirectory = function() { const term = document.getElementById('searchDir').value.trim(); document.querySelectorAll('#dirTable tr').forEach(row => { row.style.display = (term === '' || row.innerText.toLowerCase().includes(term.toLowerCase())) ? '' : 'none'; }); }
     window.filterLogsTable = function() { const filter = document.getElementById('reportEventFilter').value; renderLogsTable(filter ? allLogs.filter(l => l.eventName === filter) : allLogs); }
     window.lockSystem = function() { /* PIN UI trigger would be here for Admin */ document.getElementById('lockOverlay').style.display='flex'; setTimeout(()=>document.getElementById('lockOverlay').style.opacity='1',10); }
 </script>
