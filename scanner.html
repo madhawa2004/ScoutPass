@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ScoutPass Scanner V27</title>
+    <title>ScoutPass Fast Scanner V29</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
@@ -15,106 +15,59 @@
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #f8f9fa; color: #333; height: 100vh; overflow: hidden; }
 
-        /* LOGIN */
-        #loginScreen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: white; z-index: 2000; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; padding: 30px;
+        /* OVERLAYS */
+        #lockedOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 59, 48, 0.95); z-index: 5000; display: none; align-items: center; justify-content: center; color: white; flex-direction: column; }
+        
+        /* BONUS MODE BANNER */
+        #bonusModeBanner {
+            display: none; background: #6c5ce7; color: white; padding: 15px;
+            text-align: center; font-weight: bold; border-radius: 12px;
+            margin-bottom: 10px; animation: pulse 1.5s infinite;
+            justify-content: space-between; align-items: center;
+            box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
         }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+
+        /* LOGIN */
+        #loginScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; }
 
         /* MAIN SCREEN */
         #mainScreen { display: none; height: 100%; flex-direction: column; padding: 20px; max-width: 500px; margin: auto; overflow-y: auto; }
-        
         .header-title { text-align: center; color: #1877F2; font-weight: 700; font-size: 1.2rem; margin-bottom: 15px; letter-spacing: 1px; }
 
-        /* CAMERA AREA - No Guidelines */
-        .camera-container {
-            width: 100%; aspect-ratio: 1/1; background: #000; border-radius: 20px;
-            overflow: hidden; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            margin-bottom: 10px; border: 4px solid white;
-        }
+        /* CAMERA */
+        .camera-container { width: 100%; aspect-ratio: 1/1; background: #000; border-radius: 20px; overflow: hidden; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 10px; border: 4px solid white; }
         #reader { width: 100%; height: 100%; object-fit: cover; }
-        /* Hide the default scan region box */
-        #reader__scan_region { display: none !important; } 
         
-        /* CONTROLS (Flash & Cam Select) */
+        /* CONTROLS */
         .camera-controls { display: flex; gap: 10px; margin-bottom: 15px; }
         .btn-flash { background: #333; color: white; border: none; padding: 10px 15px; border-radius: 10px; }
         .btn-flash.active { background: #f1c40f; color: black; }
         .cam-select { flex-grow: 1; border: none; padding: 10px; border-radius: 10px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-
-        .custom-input {
-            border: none; background: white; padding: 15px; border-radius: 12px;
-            width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.05); font-weight: 600; margin-bottom: 15px;
-        }
-        
-        .btn-scan-trigger {
-            background: #1877F2; color: white; border: none; padding: 18px;
-            width: 100%; border-radius: 30px; font-weight: 700; font-size: 1.1rem;
-            box-shadow: 0 5px 20px rgba(24, 119, 242, 0.3);
-        }
+        .custom-input { border: none; background: white; padding: 15px; border-radius: 12px; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.05); font-weight: 600; margin-bottom: 15px; }
+        .btn-scan-trigger { background: #1877F2; color: white; border: none; padding: 18px; width: 100%; border-radius: 30px; font-weight: 700; font-size: 1.1rem; box-shadow: 0 5px 20px rgba(24, 119, 242, 0.3); }
         .btn-scan-trigger:active { transform: scale(0.98); }
 
-        /* RESULTS MODAL */
-        #resultModal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 3000; display: none;
-            align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px);
-        }
-        .result-card {
-            background: white; width: 100%; max-width: 380px; border-radius: 25px;
-            padding: 30px 20px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            animation: slideUp 0.2s ease-out;
-        }
+        /* MODALS */
+        #resultModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px); }
+        .result-card { background: white; width: 100%; max-width: 380px; border-radius: 25px; padding: 30px 20px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: slideUp 0.2s ease-out; }
         @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-        .avatar-circle {
-            width: 90px; height: 90px; background: #ffeaa7; color: #d35400;
-            border-radius: 50%; margin: 0 auto 15px; font-size: 40px;
-            display: flex; align-items: center; justify-content: center; border: 4px solid white;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        .bonus-avatar { background: #a29bfe; color: #fff; } /* Purple for Bonus */
-
+        .avatar-circle { width: 90px; height: 90px; background: #ffeaa7; color: #d35400; border-radius: 50%; margin: 0 auto 15px; font-size: 40px; display: flex; align-items: center; justify-content: center; border: 4px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         .scout-name { font-size: 1.4rem; font-weight: 700; color: #333; margin-bottom: 2px; }
         .scout-info { font-size: 0.9rem; color: #888; margin-bottom: 25px; }
-        
-        .action-btn {
-            width: 100%; padding: 14px; border-radius: 50px; font-weight: 600; margin-bottom: 10px;
-            border: none; font-size: 1rem; transition: 0.2s;
-        }
+        .action-btn { width: 100%; padding: 14px; border-radius: 50px; font-weight: 600; margin-bottom: 10px; border: none; font-size: 1rem; transition: 0.2s; }
         .btn-primary-action { background: #1877F2; color: white; }
         .btn-secondary-action { background: white; color: #333; border: 1px solid #ddd; }
-
+        
         /* MISSING ALERT */
-        #missingAlert {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #FF3B30; color: white; z-index: 4000; display: none;
-            flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px;
-        }
-        .alert-avatar {
-            width: 120px; height: 120px; border-radius: 50%; border: 5px solid rgba(255,255,255,0.3);
-            margin: 30px 0; background: white; color: #FF3B30; display: flex; align-items: center; justify-content: center; font-size: 50px;
-        }
-        .btn-dismiss {
-            background: white; color: #FF3B30; padding: 15px 40px; border-radius: 50px;
-            font-weight: 700; border: none; margin-top: 40px; width: 100%; max-width: 300px;
-        }
-
-        /* LOCKED */
-        .system-locked {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 59, 48, 0.95); z-index: 5000; display: none;
-            align-items: center; justify-content: center; color: white; flex-direction: column;
-        }
+        #missingAlert { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #FF3B30; color: white; z-index: 4000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px; }
+        .alert-avatar { width: 120px; height: 120px; border-radius: 50%; border: 5px solid rgba(255,255,255,0.3); margin: 30px 0; background: white; color: #FF3B30; display: flex; align-items: center; justify-content: center; font-size: 50px; }
+        .btn-dismiss { background: white; color: #FF3B30; padding: 15px 40px; border-radius: 50px; font-weight: 700; border: none; margin-top: 40px; width: 100%; max-width: 300px; }
     </style>
 </head>
 <body>
 
-    <div id="lockedOverlay" class="system-locked">
-        <i class="bi bi-lock-fill" style="font-size: 3rem;"></i>
-        <h3 class="mt-3 fw-bold">SYSTEM LOCKED</h3>
-    </div>
+    <div id="lockedOverlay"><i class="bi bi-lock-fill" style="font-size: 3rem;"></i><h3 class="mt-3 fw-bold">SYSTEM LOCKED</h3></div>
 
     <div id="loginScreen">
         <h2 class="fw-bold text-primary mb-1">SCOUTPASS</h2>
@@ -131,10 +84,15 @@
             <div id="reader"></div>
         </div>
 
+        <div id="bonusModeBanner">
+            <span><i class="bi bi-star-fill me-2"></i> BONUS MODE ACTIVE</span>
+            <button class="btn btn-sm btn-light text-dark fw-bold" onclick="cancelBonus()">CANCEL</button>
+            <div id="bonusDetails" class="small mt-1 text-white-50">Scan Scout to add points...</div>
+        </div>
+
         <div class="camera-controls">
             <button class="btn-flash" id="flashBtn" onclick="toggleFlash()"><i class="bi bi-lightning-fill"></i></button>
-            <select id="cameraSelect" class="cam-select" onchange="changeCamera()">
-                </select>
+            <select id="cameraSelect" class="cam-select" onchange="changeCamera()"></select>
         </div>
 
         <select id="eventSelect" class="custom-input form-select" onchange="enableScanning()">
@@ -155,10 +113,8 @@
     <div id="resultModal">
         <div class="result-card">
             <div id="scoutIcon" class="avatar-circle"><i class="bi bi-person-fill"></i></div>
-            
             <h3 class="scout-name" id="resName">...</h3>
             <p class="scout-info" id="resInfo">...</p>
-            
             <div id="dynamicButtons"></div>
             <button onclick="closeModal()" class="btn-cancel border-0 bg-white text-muted mt-2">Cancel</button>
         </div>
@@ -173,199 +129,175 @@
         <button onclick="closeMissingAlert()" class="btn-dismiss">Dismiss</button>
     </div>
 
-    <audio id="beepSound" src="data:audio/wav;base64,UklGRl9vT1dAVEZNVZhRnR..." style="display:none;"></audio> 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, onValue, push, serverTimestamp, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, push, serverTimestamp, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCIrXtwckl-4RPOXDn5IOMiHFh_uXdPiKQ",
-            authDomain: "scoutpass-276cb.firebaseapp.com",
-            projectId: "scoutpass-276cb",
-            databaseURL: "https://scoutpass-276cb-default-rtdb.asia-southeast1.firebasedatabase.app/"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
+        const firebaseConfig = { apiKey: "AIzaSyCIrXtwckl-4RPOXDn5IOMiHFh_uXdPiKQ", authDomain: "scoutpass-276cb.firebaseapp.com", projectId: "scoutpass-276cb", databaseURL: "https://scoutpass-276cb-default-rtdb.asia-southeast1.firebasedatabase.app/" };
+        const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getDatabase(app);
 
         let html5QrCode;
         let selectedEvent = null;
         let cameras = [];
         let isFlashOn = false;
+        let pendingBonus = null; // Store bonus data here
 
-        // BEEP FUNCTION
+        // BEEP & VIBRATE (FAST)
         function playBeep() {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            oscillator.type = "sine";
-            oscillator.frequency.value = 1000;
-            gainNode.gain.value = 0.1;
-            oscillator.start();
-            setTimeout(() => oscillator.stop(), 150); // Short beep
-            
-            // Haptic Feedback
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.frequency.value = 1000; gain.gain.value = 0.1;
+            osc.start(); setTimeout(() => osc.stop(), 100);
             if (navigator.vibrate) navigator.vibrate(200);
         }
 
-        // AUTH
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('mainScreen').style.display = 'flex';
-                loadEvents();
-                initScanner();
+                loadEvents(); initScanner();
             } else {
                 document.getElementById('loginScreen').style.display = 'flex';
                 document.getElementById('mainScreen').style.display = 'none';
             }
         });
 
-        window.staffLogin = () => {
-            const e = document.getElementById('stfEmail').value;
-            const p = document.getElementById('stfPass').value;
-            signInWithEmailAndPassword(auth, e, p).catch(err => Swal.fire('Error', err.message, 'error'));
-        }
+        window.staffLogin = () => { const e = document.getElementById('stfEmail').value; const p = document.getElementById('stfPass').value; signInWithEmailAndPassword(auth, e, p).catch(err => Swal.fire('Error', err.message, 'error')); }
         window.staffLogout = () => signOut(auth);
 
-        // LOCK SYSTEM
         onValue(ref(db, 'system_settings/scanning_active'), (s) => {
-            const active = s.val();
-            document.getElementById('lockedOverlay').style.display = active ? 'none' : 'flex';
-            if(!active && html5QrCode) html5QrCode.pause();
-            if(active && html5QrCode) html5QrCode.resume();
+            const active = s.val(); document.getElementById('lockedOverlay').style.display = active ? 'none' : 'flex';
+            if(!active && html5QrCode) html5QrCode.pause(); if(active && html5QrCode) html5QrCode.resume();
         });
 
-        // EVENTS
         function loadEvents() {
             onValue(ref(db, 'events'), (s) => {
                 const sel = document.getElementById('eventSelect');
                 sel.innerHTML = '<option value="" disabled selected>Select Event</option>';
-                if(s.exists()) {
-                    Object.entries(s.val()).forEach(([k, v]) => {
-                        if(v.active) {
-                            const opt = document.createElement('option');
-                            opt.value = k;
-                            opt.text = v.name;
-                            opt.dataset.buttons = v.buttons ? v.buttons.join(',') : 'SCAN';
-                            sel.appendChild(opt);
-                        }
-                    });
-                }
+                if(s.exists()) { Object.entries(s.val()).forEach(([k, v]) => { if(v.active) { const opt = document.createElement('option'); opt.value = k; opt.text = v.name; opt.dataset.buttons = v.buttons ? v.buttons.join(',') : 'SCAN'; sel.appendChild(opt); } }); }
             });
         }
-        window.enableScanning = () => {
-            const sel = document.getElementById('eventSelect');
-            if(sel.selectedIndex > 0) {
-                selectedEvent = {
-                    id: sel.value,
-                    name: sel.options[sel.selectedIndex].text,
-                    buttons: sel.options[sel.selectedIndex].dataset.buttons.split(',')
-                };
-            }
-        }
+        window.enableScanning = () => { const sel = document.getElementById('eventSelect'); if(sel.selectedIndex > 0) { selectedEvent = { id: sel.value, name: sel.options[sel.selectedIndex].text, buttons: sel.options[sel.selectedIndex].dataset.buttons.split(',') }; } }
 
-        // CAMERA SETUP
         async function initScanner() {
-            try {
-                cameras = await Html5Qrcode.getCameras();
-                const camSel = document.getElementById('cameraSelect');
-                camSel.innerHTML = "";
-                
-                if (cameras && cameras.length) {
-                    cameras.forEach(cam => {
-                        const opt = document.createElement('option');
-                        opt.value = cam.id;
-                        opt.text = cam.label || `Camera ${camSel.length + 1}`;
-                        camSel.appendChild(opt);
-                    });
-
-                    // Auto select back camera
-                    const backCam = cameras.find(c => c.label.toLowerCase().includes('back'));
-                    camSel.value = backCam ? backCam.id : cameras[0].id;
-                    
-                    startCamera(camSel.value);
-                }
-            } catch (e) { console.error(e); }
+            cameras = await Html5Qrcode.getCameras();
+            const camSel = document.getElementById('cameraSelect'); camSel.innerHTML = "";
+            if (cameras.length) {
+                cameras.forEach(cam => { const opt = document.createElement('option'); opt.value = cam.id; opt.text = cam.label || `Cam ${camSel.length+1}`; camSel.appendChild(opt); });
+                const backCam = cameras.find(c => c.label.toLowerCase().includes('back'));
+                startCamera(backCam ? backCam.id : cameras[0].id);
+            }
         }
 
         function startCamera(camId) {
             html5QrCode = new Html5Qrcode("reader");
-            // No qrbox passed to remove guidelines
-            const config = { fps: 10, aspectRatio: 1.0 }; 
-            
-            html5QrCode.start(
-                camId, 
-                config, 
-                (txt) => processScan(txt), 
-                (err) => {}
-            );
+            // Large scan area for speed, high FPS
+            html5QrCode.start(camId, { fps: 15, qrbox: { width: 300, height: 300 } }, (txt) => processScan(txt), () => {});
         }
 
-        window.changeCamera = () => {
-            const id = document.getElementById('cameraSelect').value;
-            html5QrCode.stop().then(() => startCamera(id));
-        }
+        window.changeCamera = () => { const id = document.getElementById('cameraSelect').value; html5QrCode.stop().then(() => startCamera(id)); }
+        window.toggleFlash = () => { if(html5QrCode) { isFlashOn = !isFlashOn; html5QrCode.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] }); document.getElementById('flashBtn').classList.toggle('active'); } }
+        window.handleManualSubmit = () => { const val = document.getElementById('manualInput').value; if(val) processScan(val); }
 
-        window.toggleFlash = () => {
-            if(!html5QrCode) return;
-            isFlashOn = !isFlashOn;
-            html5QrCode.applyVideoConstraints({
-                advanced: [{ torch: isFlashOn }]
-            }).catch(() => {
-                isFlashOn = !isFlashOn;
-                Swal.fire({toast:true, position:'top', title:'Flash not supported on this camera'});
-            });
-            document.getElementById('flashBtn').classList.toggle('active');
-        }
-
-        window.handleManualSubmit = () => {
-            const val = document.getElementById('manualInput').value;
-            if(val) processScan(val);
-        }
-
-        // SCAN LOGIC
+        // --- CORE SCAN LOGIC (FAST) ---
         async function processScan(code) {
             if (!selectedEvent) return Swal.fire({toast:true, position:'top', icon:'warning', title:'Select an Event first!'});
             
-            playBeep(); // BEEP & VIBRATE
-            if(html5QrCode) html5QrCode.pause();
+            playBeep(); // Immediate Feedback
+            if(html5QrCode) html5QrCode.pause(); // Pause to prevent double scan
 
-            // BONUS CHECK
+            // 1. IS IT A BONUS QR?
             if (code.startsWith("BONUS:")) {
                 const codeKey = code.split(':')[1];
                 const snap = await get(ref(db, `special_codes/${codeKey}`));
-                
                 if (snap.exists()) {
-                    const bonus = snap.val();
-                    showBonusModal(bonus, code);
+                    pendingBonus = snap.val();
+                    // Activate Bonus Mode
+                    document.getElementById('bonusModeBanner').style.display = 'flex';
+                    document.getElementById('bonusDetails').innerText = `Scan Scout to give ${pendingBonus.name} (+${pendingBonus.points} pts)`;
+                    // Resume to scan scout
+                    html5QrCode.resume();
+                    const Toast = Swal.mixin({toast:true, position:'top', showConfirmButton:false, timer:2000});
+                    Toast.fire({icon:'info', title: 'Bonus Mode Active!'});
                 } else {
-                    Swal.fire('Invalid', 'Bonus Token not found', 'error').then(()=>html5QrCode.resume());
+                    Swal.fire('Error', 'Invalid Bonus Token', 'error').then(()=>html5QrCode.resume());
                 }
                 return;
             }
 
-            // SCOUT CHECK
+            // 2. IS IT A SCOUT?
             const safeKey = code.replace('/', '_');
             const snap = await get(ref(db, `scouts/${safeKey}`));
 
             if (snap.exists()) {
                 const scout = snap.val();
+                
+                // IF BONUS IS PENDING -> REDEEM IMMEDIATELY
+                if (pendingBonus) {
+                    await confirmBonusRedemption(safeKey, scout);
+                    return;
+                }
+
+                // NORMAL SCAN
                 if (scout.isMissing) {
                     showMissingAlert(scout);
                 } else {
                     showResultModal(scout, code);
                 }
             } else {
-                Swal.fire({icon:'error', title:'ID Not Found', timer:1500, showConfirmButton:false}).then(()=>html5QrCode.resume());
+                Swal.fire({icon:'error', title:'ID Not Found', timer:1000, showConfirmButton:false}).then(()=>html5QrCode.resume());
             }
             document.getElementById('manualInput').value = "";
         }
 
+        // --- BONUS REDEMPTION ---
+        async function confirmBonusRedemption(scoutKey, scout) {
+            try {
+                // 1. Update Scout Points
+                const currentPoints = parseInt(scout.points || 0);
+                const bonusPoints = parseInt(pendingBonus.points);
+                const newPoints = currentPoints + bonusPoints;
+
+                await update(ref(db, `scouts/${scoutKey}`), { points: newPoints });
+
+                // 2. Log Transaction
+                await push(ref(db, 'logs'), {
+                    scoutID: scout.id,
+                    scoutName: scout.name,
+                    eventName: `BONUS: ${pendingBonus.name}`,
+                    action: `+${bonusPoints} PTS`,
+                    timestamp: serverTimestamp(),
+                    scannedBy: auth.currentUser.email
+                });
+
+                // 3. Success Feedback
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Bonus Redeemed!',
+                    html: `<b>${scout.name}</b> received<br><b>${pendingBonus.name}</b> (${bonusPoints} pts)`,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                // 4. Reset Bonus Mode
+                cancelBonus(); 
+
+            } catch (e) {
+                Swal.fire('Error', e.message, 'error');
+            } finally {
+                if(html5QrCode) html5QrCode.resume();
+            }
+        }
+
+        window.cancelBonus = () => {
+            pendingBonus = null;
+            document.getElementById('bonusModeBanner').style.display = 'none';
+        }
+
+        // --- UI HANDLERS ---
         function showResultModal(scout, rawID) {
             document.getElementById('resName').innerText = scout.name;
             document.getElementById('resInfo').innerHTML = `ID: ${scout.id}<br>${scout.troop}`;
@@ -384,17 +316,6 @@
             document.getElementById('resultModal').style.display = 'flex';
         }
 
-        function showBonusModal(bonus, rawID) {
-            document.getElementById('resName').innerText = bonus.name;
-            document.getElementById('resInfo').innerText = `${bonus.points} Bonus Points`;
-            document.getElementById('scoutIcon').className = "avatar-circle bonus-avatar";
-            document.getElementById('scoutIcon').innerHTML = '<i class="bi bi-star-fill"></i>';
-
-            const btnContainer = document.getElementById('dynamicButtons');
-            btnContainer.innerHTML = `<button class="action-btn btn-primary-action" onclick="submitAction('${rawID}', '${bonus.name}', 'REDEEM')">Redeem Token</button>`;
-            document.getElementById('resultModal').style.display = 'flex';
-        }
-
         function showMissingAlert(scout) {
             document.getElementById('misName').innerText = scout.name;
             document.getElementById('misTroop').innerText = scout.troop;
@@ -403,15 +324,14 @@
         }
 
         window.submitAction = async (rawID, name, action) => {
-            const log = {
+            await push(ref(db, 'logs'), {
                 scoutID: rawID,
                 scoutName: name,
                 eventName: selectedEvent.name,
                 action: action,
                 timestamp: serverTimestamp(),
                 scannedBy: auth.currentUser.email
-            };
-            await push(ref(db, 'logs'), log);
+            });
             closeModal();
             const Toast = Swal.mixin({toast:true, position:'bottom', showConfirmButton:false, timer:1500});
             Toast.fire({icon:'success', title: 'Done'});
