@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ScoutPass Fast Scanner V29</title>
+    <title>ScoutPass Pro V30</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
@@ -18,7 +18,7 @@
         /* OVERLAYS */
         #lockedOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 59, 48, 0.95); z-index: 5000; display: none; align-items: center; justify-content: center; color: white; flex-direction: column; }
         
-        /* BONUS MODE BANNER */
+        /* BONUS BANNER */
         #bonusModeBanner {
             display: none; background: #6c5ce7; color: white; padding: 15px;
             text-align: center; font-weight: bold; border-radius: 12px;
@@ -35,7 +35,7 @@
         #mainScreen { display: none; height: 100%; flex-direction: column; padding: 20px; max-width: 500px; margin: auto; overflow-y: auto; }
         .header-title { text-align: center; color: #1877F2; font-weight: 700; font-size: 1.2rem; margin-bottom: 15px; letter-spacing: 1px; }
 
-        /* CAMERA */
+        /* CAMERA with Standard Box */
         .camera-container { width: 100%; aspect-ratio: 1/1; background: #000; border-radius: 20px; overflow: hidden; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 10px; border: 4px solid white; }
         #reader { width: 100%; height: 100%; object-fit: cover; }
         
@@ -46,11 +46,10 @@
         .cam-select { flex-grow: 1; border: none; padding: 10px; border-radius: 10px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .custom-input { border: none; background: white; padding: 15px; border-radius: 12px; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.05); font-weight: 600; margin-bottom: 15px; }
         .btn-scan-trigger { background: #1877F2; color: white; border: none; padding: 18px; width: 100%; border-radius: 30px; font-weight: 700; font-size: 1.1rem; box-shadow: 0 5px 20px rgba(24, 119, 242, 0.3); }
-        .btn-scan-trigger:active { transform: scale(0.98); }
-
+        
         /* MODALS */
         #resultModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px); }
-        .result-card { background: white; width: 100%; max-width: 380px; border-radius: 25px; padding: 30px 20px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: slideUp 0.2s ease-out; }
+        .result-card { background: white; width: 100%; max-width: 380px; border-radius: 25px; padding: 30px 20px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: slideUp 0.15s ease-out; }
         @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .avatar-circle { width: 90px; height: 90px; background: #ffeaa7; color: #d35400; border-radius: 50%; margin: 0 auto 15px; font-size: 40px; display: flex; align-items: center; justify-content: center; border: 4px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         .scout-name { font-size: 1.4rem; font-weight: 700; color: #333; margin-bottom: 2px; }
@@ -85,9 +84,9 @@
         </div>
 
         <div id="bonusModeBanner">
-            <span><i class="bi bi-star-fill me-2"></i> BONUS MODE ACTIVE</span>
+            <span><i class="bi bi-star-fill me-2"></i> BONUS ACTIVE</span>
             <button class="btn btn-sm btn-light text-dark fw-bold" onclick="cancelBonus()">CANCEL</button>
-            <div id="bonusDetails" class="small mt-1 text-white-50">Scan Scout to add points...</div>
+            <div id="bonusDetails" class="small mt-1 text-white-50" style="width:100%">Scan any scout to add points</div>
         </div>
 
         <div class="camera-controls">
@@ -141,17 +140,26 @@
         let selectedEvent = null;
         let cameras = [];
         let isFlashOn = false;
-        let pendingBonus = null; // Store bonus data here
+        let pendingBonus = null; // HOLDS BONUS DATA
 
-        // BEEP & VIBRATE (FAST)
-        function playBeep() {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.frequency.value = 1000; gain.gain.value = 0.1;
-            osc.start(); setTimeout(() => osc.stop(), 100);
+        // AUDIO CONTEXT FOR BEEP
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function triggerBeepAndVibrate() {
+            // Vibrate
             if (navigator.vibrate) navigator.vibrate(200);
+            
+            // Beep Sound
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.type = "square";
+            oscillator.frequency.value = 800; // Hz
+            gainNode.gain.value = 0.1;
+            oscillator.start();
+            setTimeout(() => oscillator.stop(), 100);
         }
 
         onAuthStateChanged(auth, (user) => {
@@ -187,103 +195,108 @@
             const camSel = document.getElementById('cameraSelect'); camSel.innerHTML = "";
             if (cameras.length) {
                 cameras.forEach(cam => { const opt = document.createElement('option'); opt.value = cam.id; opt.text = cam.label || `Cam ${camSel.length+1}`; camSel.appendChild(opt); });
-                const backCam = cameras.find(c => c.label.toLowerCase().includes('back'));
-                startCamera(backCam ? backCam.id : cameras[0].id);
+                const backCam = cameras.find(c => c.label.toLowerCase().includes('back')) || cameras[0];
+                startCamera(backCam.id);
             }
         }
 
         function startCamera(camId) {
             html5QrCode = new Html5Qrcode("reader");
-            // Large scan area for speed, high FPS
-            html5QrCode.start(camId, { fps: 15, qrbox: { width: 300, height: 300 } }, (txt) => processScan(txt), () => {});
+            // HIGH PERFORMANCE CONFIG
+            const config = { 
+                fps: 30, // Max Speed
+                qrbox: { width: 250, height: 250 }, // Standard Box Size
+                experimentalFeatures: { useBarCodeDetectorIfSupported: true }, // Hardware Acceleration
+                aspectRatio: 1.0
+            }; 
+            
+            html5QrCode.start(camId, config, (txt) => processScan(txt), () => {});
         }
 
         window.changeCamera = () => { const id = document.getElementById('cameraSelect').value; html5QrCode.stop().then(() => startCamera(id)); }
         window.toggleFlash = () => { if(html5QrCode) { isFlashOn = !isFlashOn; html5QrCode.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] }); document.getElementById('flashBtn').classList.toggle('active'); } }
         window.handleManualSubmit = () => { const val = document.getElementById('manualInput').value; if(val) processScan(val); }
 
-        // --- CORE SCAN LOGIC (FAST) ---
+        // --- CORE LOGIC ---
         async function processScan(code) {
             if (!selectedEvent) return Swal.fire({toast:true, position:'top', icon:'warning', title:'Select an Event first!'});
             
-            playBeep(); // Immediate Feedback
-            if(html5QrCode) html5QrCode.pause(); // Pause to prevent double scan
+            triggerBeepAndVibrate(); // FAST FEEDBACK
+            if(html5QrCode) html5QrCode.pause();
 
-            // 1. IS IT A BONUS QR?
+            // 1. BONUS TOKEN?
             if (code.startsWith("BONUS:")) {
                 const codeKey = code.split(':')[1];
                 const snap = await get(ref(db, `special_codes/${codeKey}`));
+                
                 if (snap.exists()) {
                     pendingBonus = snap.val();
-                    // Activate Bonus Mode
+                    // SHOW BONUS UI
                     document.getElementById('bonusModeBanner').style.display = 'flex';
-                    document.getElementById('bonusDetails').innerText = `Scan Scout to give ${pendingBonus.name} (+${pendingBonus.points} pts)`;
-                    // Resume to scan scout
-                    html5QrCode.resume();
+                    document.getElementById('bonusDetails').innerText = `Adding ${pendingBonus.points} pts (Scan Scout Now)`;
+                    
                     const Toast = Swal.mixin({toast:true, position:'top', showConfirmButton:false, timer:2000});
-                    Toast.fire({icon:'info', title: 'Bonus Mode Active!'});
+                    Toast.fire({icon:'info', title: `Bonus: ${pendingBonus.name} Active`});
+                    
+                    html5QrCode.resume(); // Keep scanning for scout
                 } else {
-                    Swal.fire('Error', 'Invalid Bonus Token', 'error').then(()=>html5QrCode.resume());
+                    Swal.fire('Error', 'Invalid Token', 'error').then(()=>html5QrCode.resume());
                 }
                 return;
             }
 
-            // 2. IS IT A SCOUT?
+            // 2. SCOUT SCAN?
             const safeKey = code.replace('/', '_');
             const snap = await get(ref(db, `scouts/${safeKey}`));
 
             if (snap.exists()) {
                 const scout = snap.val();
-                
-                // IF BONUS IS PENDING -> REDEEM IMMEDIATELY
+
+                // 2.1 IF BONUS IS ACTIVE -> REDEEM IT
                 if (pendingBonus) {
-                    await confirmBonusRedemption(safeKey, scout);
+                    await redeemBonus(safeKey, scout);
                     return;
                 }
 
-                // NORMAL SCAN
+                // 2.2 NORMAL FLOW
                 if (scout.isMissing) {
                     showMissingAlert(scout);
                 } else {
                     showResultModal(scout, code);
                 }
             } else {
-                Swal.fire({icon:'error', title:'ID Not Found', timer:1000, showConfirmButton:false}).then(()=>html5QrCode.resume());
+                Swal.fire({icon:'error', title:'Unknown ID', timer:1000, showConfirmButton:false}).then(()=>html5QrCode.resume());
             }
             document.getElementById('manualInput').value = "";
         }
 
-        // --- BONUS REDEMPTION ---
-        async function confirmBonusRedemption(scoutKey, scout) {
+        // REDEEM BONUS FUNCTION
+        async function redeemBonus(scoutKey, scout) {
             try {
-                // 1. Update Scout Points
-                const currentPoints = parseInt(scout.points || 0);
-                const bonusPoints = parseInt(pendingBonus.points);
-                const newPoints = currentPoints + bonusPoints;
-
+                const newPoints = (parseInt(scout.points) || 0) + parseInt(pendingBonus.points);
+                
+                // Update Firebase
                 await update(ref(db, `scouts/${scoutKey}`), { points: newPoints });
-
-                // 2. Log Transaction
+                
+                // Log it
                 await push(ref(db, 'logs'), {
                     scoutID: scout.id,
                     scoutName: scout.name,
                     eventName: `BONUS: ${pendingBonus.name}`,
-                    action: `+${bonusPoints} PTS`,
+                    action: `+${pendingBonus.points} PTS`,
                     timestamp: serverTimestamp(),
                     scannedBy: auth.currentUser.email
                 });
 
-                // 3. Success Feedback
                 Swal.fire({
                     icon: 'success',
-                    title: 'Bonus Redeemed!',
-                    html: `<b>${scout.name}</b> received<br><b>${pendingBonus.name}</b> (${bonusPoints} pts)`,
+                    title: 'Points Added!',
+                    html: `${scout.name}<br>+${pendingBonus.points} Points`,
                     timer: 2000,
                     showConfirmButton: false
                 });
 
-                // 4. Reset Bonus Mode
-                cancelBonus(); 
+                cancelBonus(); // Reset state
 
             } catch (e) {
                 Swal.fire('Error', e.message, 'error');
@@ -297,7 +310,6 @@
             document.getElementById('bonusModeBanner').style.display = 'none';
         }
 
-        // --- UI HANDLERS ---
         function showResultModal(scout, rawID) {
             document.getElementById('resName').innerText = scout.name;
             document.getElementById('resInfo').innerHTML = `ID: ${scout.id}<br>${scout.troop}`;
@@ -334,7 +346,7 @@
             });
             closeModal();
             const Toast = Swal.mixin({toast:true, position:'bottom', showConfirmButton:false, timer:1500});
-            Toast.fire({icon:'success', title: 'Done'});
+            Toast.fire({icon:'success', title: 'Saved'});
         }
 
         window.closeModal = () => { document.getElementById('resultModal').style.display='none'; if(html5QrCode) html5QrCode.resume(); }
