@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ScoutPass Pro V30</title>
+    <title>ScoutPass Scanner V31 (Delay Added)</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
@@ -35,7 +35,7 @@
         #mainScreen { display: none; height: 100%; flex-direction: column; padding: 20px; max-width: 500px; margin: auto; overflow-y: auto; }
         .header-title { text-align: center; color: #1877F2; font-weight: 700; font-size: 1.2rem; margin-bottom: 15px; letter-spacing: 1px; }
 
-        /* CAMERA with Standard Box */
+        /* CAMERA */
         .camera-container { width: 100%; aspect-ratio: 1/1; background: #000; border-radius: 20px; overflow: hidden; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 10px; border: 4px solid white; }
         #reader { width: 100%; height: 100%; object-fit: cover; }
         
@@ -140,23 +140,21 @@
         let selectedEvent = null;
         let cameras = [];
         let isFlashOn = false;
-        let pendingBonus = null; // HOLDS BONUS DATA
+        let pendingBonus = null; 
+        let lastScanTime = 0; // DELAY VARIABLE
 
         // AUDIO CONTEXT FOR BEEP
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
         function triggerBeepAndVibrate() {
-            // Vibrate
             if (navigator.vibrate) navigator.vibrate(200);
-            
-            // Beep Sound
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
             oscillator.connect(gainNode);
             gainNode.connect(audioCtx.destination);
             oscillator.type = "square";
-            oscillator.frequency.value = 800; // Hz
+            oscillator.frequency.value = 800;
             gainNode.gain.value = 0.1;
             oscillator.start();
             setTimeout(() => oscillator.stop(), 100);
@@ -202,14 +200,12 @@
 
         function startCamera(camId) {
             html5QrCode = new Html5Qrcode("reader");
-            // HIGH PERFORMANCE CONFIG
             const config = { 
-                fps: 30, // Max Speed
-                qrbox: { width: 250, height: 250 }, // Standard Box Size
-                experimentalFeatures: { useBarCodeDetectorIfSupported: true }, // Hardware Acceleration
+                fps: 30,
+                qrbox: { width: 250, height: 250 }, 
+                experimentalFeatures: { useBarCodeDetectorIfSupported: true },
                 aspectRatio: 1.0
             }; 
-            
             html5QrCode.start(camId, config, (txt) => processScan(txt), () => {});
         }
 
@@ -219,46 +215,41 @@
 
         // --- CORE LOGIC ---
         async function processScan(code) {
+            // 1. COOLDOWN CHECK (1 Second)
+            const now = Date.now();
+            if (now - lastScanTime < 1000) return;
+            lastScanTime = now;
+
             if (!selectedEvent) return Swal.fire({toast:true, position:'top', icon:'warning', title:'Select an Event first!'});
             
-            triggerBeepAndVibrate(); // FAST FEEDBACK
+            triggerBeepAndVibrate();
             if(html5QrCode) html5QrCode.pause();
 
-            // 1. BONUS TOKEN?
             if (code.startsWith("BONUS:")) {
                 const codeKey = code.split(':')[1];
                 const snap = await get(ref(db, `special_codes/${codeKey}`));
-                
                 if (snap.exists()) {
                     pendingBonus = snap.val();
-                    // SHOW BONUS UI
                     document.getElementById('bonusModeBanner').style.display = 'flex';
                     document.getElementById('bonusDetails').innerText = `Adding ${pendingBonus.points} pts (Scan Scout Now)`;
-                    
                     const Toast = Swal.mixin({toast:true, position:'top', showConfirmButton:false, timer:2000});
                     Toast.fire({icon:'info', title: `Bonus: ${pendingBonus.name} Active`});
-                    
-                    html5QrCode.resume(); // Keep scanning for scout
+                    html5QrCode.resume();
                 } else {
                     Swal.fire('Error', 'Invalid Token', 'error').then(()=>html5QrCode.resume());
                 }
                 return;
             }
 
-            // 2. SCOUT SCAN?
             const safeKey = code.replace('/', '_');
             const snap = await get(ref(db, `scouts/${safeKey}`));
 
             if (snap.exists()) {
                 const scout = snap.val();
-
-                // 2.1 IF BONUS IS ACTIVE -> REDEEM IT
                 if (pendingBonus) {
                     await redeemBonus(safeKey, scout);
                     return;
                 }
-
-                // 2.2 NORMAL FLOW
                 if (scout.isMissing) {
                     showMissingAlert(scout);
                 } else {
@@ -270,15 +261,10 @@
             document.getElementById('manualInput').value = "";
         }
 
-        // REDEEM BONUS FUNCTION
         async function redeemBonus(scoutKey, scout) {
             try {
                 const newPoints = (parseInt(scout.points) || 0) + parseInt(pendingBonus.points);
-                
-                // Update Firebase
                 await update(ref(db, `scouts/${scoutKey}`), { points: newPoints });
-                
-                // Log it
                 await push(ref(db, 'logs'), {
                     scoutID: scout.id,
                     scoutName: scout.name,
@@ -287,7 +273,6 @@
                     timestamp: serverTimestamp(),
                     scannedBy: auth.currentUser.email
                 });
-
                 Swal.fire({
                     icon: 'success',
                     title: 'Points Added!',
@@ -295,9 +280,7 @@
                     timer: 2000,
                     showConfirmButton: false
                 });
-
-                cancelBonus(); // Reset state
-
+                cancelBonus();
             } catch (e) {
                 Swal.fire('Error', e.message, 'error');
             } finally {
