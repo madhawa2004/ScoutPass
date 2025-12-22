@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ScoutPass Scanner</title>
+    <title>ScoutPass Scanner V33.1</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
@@ -62,6 +62,10 @@
         #missingAlert { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #FF3B30; color: white; z-index: 4000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px; }
         .alert-avatar { width: 120px; height: 120px; border-radius: 50%; border: 5px solid rgba(255,255,255,0.3); margin: 30px 0; background: white; color: #FF3B30; display: flex; align-items: center; justify-content: center; font-size: 50px; }
         .btn-dismiss { background: white; color: #FF3B30; padding: 15px 40px; border-radius: 50px; font-weight: 700; border: none; margin-top: 40px; width: 100%; max-width: 300px; }
+
+        /* FOOTER CREDIT */
+        .dev-credit { margin-top: 30px; font-size: 0.75rem; color: #999; text-align: center; }
+        .dev-credit strong { color: #555; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -74,6 +78,7 @@
         <input type="email" id="stfEmail" class="custom-input bg-light border" placeholder="Staff Email">
         <input type="password" id="stfPass" class="custom-input bg-light border" placeholder="Password">
         <button onclick="staffLogin()" class="btn-scan-trigger">LOGIN</button>
+        <div class="dev-credit mt-4">Designed & Developed by<br><strong>Madhawa Basnayake</strong></div>
     </div>
 
     <div id="mainScreen">
@@ -105,7 +110,12 @@
         </button>
         
         <div class="text-center mt-3">
-            <small class="text-danger fw-bold" onclick="staffLogout()">Logout</small>
+            <small class="text-danger fw-bold" style="cursor:pointer" onclick="staffLogout()">Logout</small>
+        </div>
+
+        <div class="dev-credit">
+            Designed & Developed by<br>
+            <strong>Madhawa Basnayake</strong>
         </div>
     </div>
 
@@ -131,7 +141,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, onValue, push, serverTimestamp, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, push, serverTimestamp, get, update, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = { apiKey: "AIzaSyCIrXtwckl-4RPOXDn5IOMiHFh_uXdPiKQ", authDomain: "scoutpass-276cb.firebaseapp.com", projectId: "scoutpass-276cb", databaseURL: "https://scoutpass-276cb-default-rtdb.asia-southeast1.firebasedatabase.app/" };
         const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getDatabase(app);
@@ -142,25 +152,33 @@
         let isFlashOn = false;
         let pendingBonus = null; 
         
-        // --- TRACKING VARIABLES ---
         let lastScanTime = 0; 
         let lastScannedCode = null;
 
-        // AUDIO CONTEXT FOR BEEP
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
-        function triggerBeepAndVibrate() {
-            if (navigator.vibrate) navigator.vibrate(200);
+        function triggerBeepAndVibrate(type = 'success') {
+            if (navigator.vibrate) {
+                if(type === 'error') navigator.vibrate([100, 50, 100]); 
+                else navigator.vibrate(200);
+            }
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
             oscillator.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-            oscillator.type = "square";
-            oscillator.frequency.value = 800;
+            
+            if(type === 'error') {
+                oscillator.type = "sawtooth";
+                oscillator.frequency.value = 150;
+            } else {
+                oscillator.type = "square";
+                oscillator.frequency.value = 800;
+            }
+            
             gainNode.gain.value = 0.1;
             oscillator.start();
-            setTimeout(() => oscillator.stop(), 100);
+            setTimeout(() => oscillator.stop(), type === 'error' ? 300 : 100);
         }
 
         onAuthStateChanged(auth, (user) => {
@@ -186,10 +204,34 @@
             onValue(ref(db, 'events'), (s) => {
                 const sel = document.getElementById('eventSelect');
                 sel.innerHTML = '<option value="" disabled selected>Select Event</option>';
-                if(s.exists()) { Object.entries(s.val()).forEach(([k, v]) => { if(v.active) { const opt = document.createElement('option'); opt.value = k; opt.text = v.name; opt.dataset.buttons = v.buttons ? v.buttons.join(',') : 'SCAN'; sel.appendChild(opt); } }); }
+                if(s.exists()) { 
+                    Object.entries(s.val()).forEach(([k, v]) => { 
+                        if(v.active) { 
+                            const opt = document.createElement('option'); 
+                            opt.value = k; 
+                            opt.text = v.name; 
+                            opt.dataset.buttons = v.buttons ? v.buttons.join(',') : 'SCAN'; 
+                            opt.dataset.onetime = v.isOneTime ? 'true' : 'false';
+                            if(v.isOneTime) opt.text += " (1-Time)";
+                            sel.appendChild(opt); 
+                        } 
+                    }); 
+                }
             });
         }
-        window.enableScanning = () => { const sel = document.getElementById('eventSelect'); if(sel.selectedIndex > 0) { selectedEvent = { id: sel.value, name: sel.options[sel.selectedIndex].text, buttons: sel.options[sel.selectedIndex].dataset.buttons.split(',') }; } }
+
+        window.enableScanning = () => { 
+            const sel = document.getElementById('eventSelect'); 
+            if(sel.selectedIndex > 0) { 
+                const opt = sel.options[sel.selectedIndex];
+                selectedEvent = { 
+                    id: sel.value, 
+                    name: opt.text.replace(" (1-Time)", ""), 
+                    buttons: opt.dataset.buttons.split(','),
+                    isOneTime: opt.dataset.onetime === 'true'
+                }; 
+            } 
+        }
 
         async function initScanner() {
             cameras = await Html5Qrcode.getCameras();
@@ -203,12 +245,7 @@
 
         function startCamera(camId) {
             html5QrCode = new Html5Qrcode("reader");
-            const config = { 
-                fps: 25, 
-                qrbox: { width: 250, height: 250 }, 
-                experimentalFeatures: { useBarCodeDetectorIfSupported: true },
-                aspectRatio: 1.0
-            }; 
+            const config = { fps: 25, qrbox: { width: 250, height: 250 }, experimentalFeatures: { useBarCodeDetectorIfSupported: true }, aspectRatio: 1.0 }; 
             html5QrCode.start(camId, config, (txt) => processScan(txt), () => {});
         }
 
@@ -216,27 +253,22 @@
         window.toggleFlash = () => { if(html5QrCode) { isFlashOn = !isFlashOn; html5QrCode.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] }); document.getElementById('flashBtn').classList.toggle('active'); } }
         window.handleManualSubmit = () => { const val = document.getElementById('manualInput').value; if(val) processScan(val); }
 
-        // --- OPTIMIZED SCAN LOGIC ---
         async function processScan(code) {
             const now = Date.now();
 
-            // 1. DUPLICATE CHECK (10 Seconds)
-            // කලින් ස්කෑන් කරපු QR එකම නම්, තත්පර 10ක් යනකම් Ignore කරනවා.
             if (code === lastScannedCode && (now - lastScanTime < 10000)) {
                 return;
             }
-
-            // වෙනස් QR එකක් නම් කෙලින්ම ස්කෑන් වෙනවා (No Global Delay)
 
             lastScanTime = now;
             lastScannedCode = code;
 
             if (!selectedEvent) return Swal.fire({toast:true, position:'top', icon:'warning', title:'Select an Event first!'});
             
-            triggerBeepAndVibrate();
             if(html5QrCode) html5QrCode.pause();
 
             if (code.startsWith("BONUS:")) {
+                triggerBeepAndVibrate('success');
                 const codeKey = code.split(':')[1];
                 const snap = await get(ref(db, `special_codes/${codeKey}`));
                 if (snap.exists()) {
@@ -245,8 +277,7 @@
                     document.getElementById('bonusDetails').innerText = `Adding ${pendingBonus.points} pts (Scan Scout Now)`;
                     const Toast = Swal.mixin({toast:true, position:'top', showConfirmButton:false, timer:2000});
                     Toast.fire({icon:'info', title: `Bonus: ${pendingBonus.name} Active`});
-                    
-                    lastScannedCode = null; // Bonus mode allows rescanning
+                    lastScannedCode = null; 
                     html5QrCode.resume();
                 } else {
                     Swal.fire('Error', 'Invalid Token', 'error').then(()=>html5QrCode.resume());
@@ -254,21 +285,56 @@
                 return;
             }
 
-            const safeKey = code.replace('/', '_');
+            const safeKey = code.replace(/[.#$/[\]]/g, '_');
             const snap = await get(ref(db, `scouts/${safeKey}`));
 
             if (snap.exists()) {
                 const scout = snap.val();
+
                 if (pendingBonus) {
+                    triggerBeepAndVibrate('success');
                     await redeemBonus(safeKey, scout);
                     return;
                 }
+
                 if (scout.isMissing) {
+                    triggerBeepAndVibrate('error');
                     showMissingAlert(scout);
-                } else {
-                    showResultModal(scout, code);
+                    return;
                 }
+
+                if (selectedEvent.isOneTime) {
+                    const logsRef = ref(db, 'logs');
+                    const q = query(logsRef, orderByChild('scoutID'), equalTo(scout.id));
+                    const logSnap = await get(q);
+                    
+                    let alreadyDone = false;
+                    if(logSnap.exists()) {
+                        const history = Object.values(logSnap.val());
+                        alreadyDone = history.some(l => l.eventName === selectedEvent.name);
+                    }
+
+                    if (alreadyDone) {
+                        triggerBeepAndVibrate('error');
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'ALREADY COMPLETED',
+                            text: `${scout.name} has already done this activity!`,
+                            timer: 3000,
+                            showConfirmButton: false,
+                            background: '#fff3cd'
+                        }).then(() => {
+                            html5QrCode.resume();
+                        });
+                        return; 
+                    }
+                }
+
+                triggerBeepAndVibrate('success');
+                showResultModal(scout, code);
+
             } else {
+                triggerBeepAndVibrate('error');
                 Swal.fire({icon:'error', title:'Unknown ID', timer:1000, showConfirmButton:false}).then(()=> {
                     html5QrCode.resume();
                 });
@@ -331,7 +397,6 @@
             document.getElementById('misName').innerText = scout.name;
             document.getElementById('misTroop').innerText = scout.troop;
             document.getElementById('missingAlert').style.display = 'flex';
-            if(navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]);
         }
 
         window.submitAction = async (rawID, name, action) => {
@@ -350,7 +415,6 @@
 
         window.closeModal = () => { 
             document.getElementById('resultModal').style.display='none'; 
-            // Resume with a tiny delay just to prevent camera stutter
             setTimeout(() => {
                 if(html5QrCode) html5QrCode.resume();
             }, 300);
