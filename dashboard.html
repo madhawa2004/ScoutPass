@@ -91,6 +91,7 @@
 <body>
 
 <div id="qr-hidden"></div>
+<input type="file" id="importFile" style="display:none" onchange="importData(this)" accept=".json">
 
 <div class="sidebar">
     <div class="brand mb-4 text-primary fw-bold fs-4"><i class="bi bi-shield-lock-fill"></i> ScoutPass</div>
@@ -173,24 +174,29 @@
 
     <div id="sec-registration" class="section animate__animated animate__fadeIn" style="display:none;">
         <div class="stat-card admin-only">
-            <h4 class="fw-bold mb-3"><i class="bi bi-person-vcard-fill text-primary"></i> Bulk Registration</h4>
-            <div class="common-data-box">
-                <h6 class="fw-bold text-primary mb-3">Step 1: Set Common Data</h6>
-                <div class="row g-2">
-                    <div class="col-md-3"><label class="small fw-bold">District</label><input type="text" id="regDistrict" class="form-control fw-bold" value="Kegalle"></div>
-                    <div class="col-md-2"><label class="small fw-bold">Prefix</label><input type="text" id="regPrefix" class="form-control fw-bold text-center" value="KG"></div>
-                    <div class="col-md-2"><label class="small fw-bold">Troop No</label><input type="text" id="regTroopNum" class="form-control fw-bold text-center" placeholder="15"></div>
-                    <div class="col-md-5"><label class="small fw-bold">Troop Name</label><input type="text" id="regTroopName" class="form-control fw-bold" placeholder="Kegalle Vidyalaya"></div>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-bold mb-0"><i class="bi bi-person-vcard-fill text-primary"></i> Direct Registration</h4>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-success btn-sm" onclick="exportData()"><i class="bi bi-download"></i> Export DB</button>
+                    <button class="btn btn-outline-warning btn-sm" onclick="document.getElementById('importFile').click()"><i class="bi bi-upload"></i> Import DB</button>
                 </div>
             </div>
+            
             <div class="row">
                 <div class="col-md-6">
-                    <div class="d-flex justify-content-between align-items-center mb-2"><h6 class="fw-bold">Step 2: Paste List</h6><span class="badge bg-dark">Count: <span id="pasteCount" class="text-warning">0</span></span></div>
-                    <textarea id="bulkText" class="form-control mb-3" rows="10" placeholder="Paste names here..." oninput="updatePasteCount()"></textarea>
+                    <div class="common-data-box">
+                        <h6 class="fw-bold text-primary mb-2">Input Format (CSV)</h6>
+                        <p class="small text-muted mb-0">Enter one student per line in this format:<br>
+                        <code class="fw-bold text-dark">RegistrationNo, Name</code></p>
+                        <p class="small text-muted">Example: <br><code>KG15/001, Kamal Perera</code></p>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2"><h6 class="fw-bold">Paste List Here</h6><span class="badge bg-dark">Count: <span id="pasteCount" class="text-warning">0</span></span></div>
+                    <textarea id="bulkText" class="form-control mb-3" rows="10" placeholder="KG15/001, Kamal Perera&#10;KG15/002, Nimal Silva" oninput="updatePasteCount()"></textarea>
                     <div class="progress mb-3" style="display:none" id="bulkProgress"><div class="progress-bar bg-success" style="width: 0%"></div></div>
                     <button class="btn btn-primary w-100 fw-bold py-3" onclick="processBulkSafely()">PROCESS & DOWNLOAD IDs</button>
                 </div>
-                <div class="col-md-6"><h6 class="fw-bold mb-2">Recently Added</h6><div style="max-height: 350px; overflow-y: auto; border:1px solid #333; border-radius:10px;"><table class="table table-sm table-striped mb-0"><thead class="table-dark" style="position: sticky; top: 0;"><tr><th>ID</th><th>Name</th></tr></thead><tbody id="regTable"></tbody></table></div></div>
+                <div class="col-md-6"><h6 class="fw-bold mb-2">Recently Added</h6><div style="max-height: 350px; overflow-y: auto; border:1px solid #333; border-radius:10px;"><table class="table table-sm table-striped mb-0"><thead class="table-dark" style="position: sticky; top: 0;"><tr><th>Reg No</th><th>Name</th></tr></thead><tbody id="regTable"></tbody></table></div></div>
             </div>
         </div>
         <div class="stat-card read-only-msg" style="display:none; text-align:center; padding:50px;">
@@ -450,7 +456,7 @@
             if(rank === 1) badge = `<span class="rank-badge" style="background:var(--gold); color:black">${rank}</span>`;
             if(rank === 2) badge = `<span class="rank-badge" style="background:var(--silver); color:black">${rank}</span>`;
             if(rank === 3) badge = `<span class="rank-badge" style="background:var(--bronze); color:black">${rank}</span>`;
-            h += `<tr><td>${badge}</td><td class="fw-bold">${s.name}</td><td class="text-muted small">${s.troop}</td><td class="fw-bold text-warning">${s.points || 0}</td></tr>`;
+            h += `<tr><td>${badge}</td><td class="fw-bold">${s.name}</td><td class="text-muted small">${s.troop || '-'}</td><td class="fw-bold text-warning">${s.points || 0}</td></tr>`;
         });
         document.getElementById('rankingsBody').innerHTML = h;
     }
@@ -500,7 +506,61 @@
     window.removeSpecial = (k) => remove(ref(db, `special_codes/${k}`));
 
     window.updatePasteCount = function() { document.getElementById('pasteCount').innerText = document.getElementById('bulkText').value.split('\n').filter(line => line.trim() !== '').length; };
-    window.processBulkSafely = async function() { const dist = document.getElementById('regDistrict').value.trim(); const prefix = document.getElementById('regPrefix').value.trim(); const troopNum = document.getElementById('regTroopNum').value.trim(); const troopName = document.getElementById('regTroopName').value.trim(); const text = document.getElementById('bulkText').value; if(!troopNum || !troopName || !text.trim()) return Swal.fire('Error', 'Missing Data!', 'error'); const lines = text.trim().split('\n').filter(l => l.trim() !== ''); document.getElementById('bulkProgress').style.display = 'flex'; lastBatchScouts = []; let successCount = 0; try { const counterRef = ref(db, 'system/scoutCounter'); const snap = await get(counterRef); let idCounter = snap.exists() ? snap.val() + 1 : 1; const updates = {}; lines.forEach(line => { const name = line.trim(); if(name) { const seq = String(idCounter).padStart(3, '0'); const displayID = `${prefix}${troopNum}/${seq}`; const safeKey = `${prefix}${troopNum}_${seq}`; const scoutObj = { id: displayID, name: name, troop: `${troopNum} - ${troopName}`, district: dist, points: 0, isMissing: false, regDate: serverTimestamp() }; updates[`scouts/${safeKey}`] = scoutObj; lastBatchScouts.push(scoutObj); idCounter++; successCount++; } }); if (Object.keys(updates).length > 0) { await update(ref(db), updates); await set(ref(db, 'system/scoutCounter'), idCounter - 1); } document.getElementById('bulkProgress').querySelector('.progress-bar').style.width = '100%'; updateRecentTable(lastBatchScouts); document.getElementById('bulkText').value = ''; Swal.fire({ icon: 'success', title: 'Done', text: `Registered ${successCount} scouts.` }); downloadBatchPDF(lastBatchScouts, `IDs_${troopName}`); } catch(e) { Swal.fire('Error', e.message, 'error'); } finally { setTimeout(() => { document.getElementById('bulkProgress').style.display = 'none'; }, 2000); } };
+    
+    // --- UPDATED REGISTRATION LOGIC ---
+    window.processBulkSafely = async function() { 
+        const text = document.getElementById('bulkText').value; 
+        
+        if(!text.trim()) return Swal.fire('Error', 'Paste the data first!', 'error'); 
+        
+        const lines = text.trim().split('\n').filter(l => l.trim() !== ''); 
+        
+        document.getElementById('bulkProgress').style.display = 'flex'; 
+        lastBatchScouts = []; 
+        let successCount = 0; 
+        
+        try { 
+            const updates = {}; 
+            lines.forEach(line => { 
+                // EXPECTING: RegNo, Name
+                const parts = line.split(',');
+                if(parts.length >= 2) {
+                    const regNo = parts[0].trim();
+                    const name = parts.slice(1).join(',').trim(); // Join remaining parts in case name has comma
+                    
+                    if(regNo && name) {
+                        const safeKey = regNo.replace(/[.#$/[\]]/g, '_'); // Firebase safe key
+                        const scoutObj = { 
+                            id: regNo, 
+                            name: name, 
+                            troop: "-", // Default value since we aren't collecting it
+                            points: 0, 
+                            isMissing: false, 
+                            regDate: serverTimestamp() 
+                        }; 
+                        updates[`scouts/${safeKey}`] = scoutObj; 
+                        lastBatchScouts.push(scoutObj); 
+                        successCount++; 
+                    }
+                }
+            }); 
+            
+            if (Object.keys(updates).length > 0) { 
+                await update(ref(db), updates); 
+            } 
+            
+            document.getElementById('bulkProgress').querySelector('.progress-bar').style.width = '100%'; 
+            updateRecentTable(lastBatchScouts); 
+            document.getElementById('bulkText').value = ''; 
+            Swal.fire({ icon: 'success', title: 'Done', text: `Registered ${successCount} scouts.` }); 
+            downloadBatchPDF(lastBatchScouts, `IDs_Export`); 
+        } catch(e) { 
+            Swal.fire('Error', e.message, 'error'); 
+        } finally { 
+            setTimeout(() => { document.getElementById('bulkProgress').style.display = 'none'; }, 2000); 
+        } 
+    };
+
     window.addStaff = async () => { const e=document.getElementById('stfEmail').value, p=document.getElementById('stfPass').value, r=document.getElementById('stfRole').value; if(e&&p) { try { const c = await createUserWithEmailAndPassword(secondaryAuth, e, p); await set(ref(db, `users/${c.user.uid}`), { email:e, role:r }); Swal.fire('Success', 'Staff Account Created', 'success'); } catch(err) { Swal.fire('Error', err.message, 'error'); } } };
     onValue(ref(db, 'users'), (s) => { const tbody = document.getElementById('staffTable'); tbody.innerHTML = ""; if (s.exists()) { Object.entries(s.val()).forEach(([uid, u]) => { tbody.innerHTML += `<tr><td>${u.email}</td><td><span class="badge bg-dark">${u.role}</span></td><td><button class="btn btn-sm btn-outline-danger admin-only" onclick="removeUser('${uid}')"><i class="bi bi-trash"></i></button></td></tr>`; }); } applyPermissions(); });
     window.removeUser = (uid) => remove(ref(db, `users/${uid}`));
@@ -511,9 +571,9 @@
         
         let h = ''; 
         allScouts.slice().reverse().slice(0,100).forEach(sc => { 
-            const safeKey = sc.id.replace('/', '_'); 
+            const safeKey = sc.id.replace(/[.#$/[\]]/g, '_');
             const status = sc.isMissing ? '<span class="badge bg-danger">MISSING</span>' : '<span class="badge bg-success">Active</span>'; 
-            h += `<tr style="cursor:pointer" onclick="viewScout('${safeKey}')"><td>${sc.id}</td><td class="fw-bold text-primary">${sc.name}</td><td>${sc.troop}</td><td>${sc.points||0}</td><td>${status}</td></tr>`; 
+            h += `<tr style="cursor:pointer" onclick="viewScout('${safeKey}')"><td>${sc.id}</td><td class="fw-bold text-primary">${sc.name}</td><td>${sc.troop||'-'}</td><td>${sc.points||0}</td><td>${status}</td></tr>`; 
         }); 
         document.getElementById('dirTable').innerHTML = h; 
         renderRankings();
@@ -523,7 +583,6 @@
     window.addEvent = async () => { const n=document.getElementById('evtName').value, p=document.getElementById('evtPoints').value, t=document.getElementById('evtType').value, b=document.getElementById('evtButtons').value; const bArray = b ? b.split(',').map(s=>s.trim()) : ['SCAN']; if(n) { await push(ref(db, 'events'), {name:n, points:p, type:t, buttons:bArray, active:true}); Swal.fire({icon:'success', title:'Event Created', timer:1500, showConfirmButton:false}); document.getElementById('evtName').value = ''; } }
     onValue(ref(db, 'presence'), (snap) => { document.getElementById('statOnline').innerText = snap.exists() ? Object.keys(snap.val()).length : 0; });
     
-    // --- UPDATED RENDER CARD FUNCTION ---
     function renderEventCards() {
         const container = document.getElementById('liveEventCards');
         container.innerHTML = "";
@@ -554,7 +613,7 @@
             let body = '';
             
             if (evt.type === 'ACCESS') {
-                body = `
+                body = `<br>
                     <div class="row text-center">
                         <div class="col-4 border-end">
                             <h3 class="fw-bold">${inCount}</h3><small class="text-muted">IN</small>
@@ -568,14 +627,14 @@
                     </div>`;
             } else {
                 // Non-Access Events (Activity)
-                body = `
+                body = `<br>
                     <div class="text-center py-2">
                         <h2 class="text-success display-4 fw-bold">${totalActivityCount}</h2>
                         <small class="text-muted fw-bold text-uppercase">Total Completed</small>
                     </div>`;
             }
 
-            container.innerHTML += `
+            container.innerHTML += `<br>
                 <div class="col-md-4">
                     <div class="stat-card border-top border-4 border-primary h-100">
                         <div class="d-flex justify-content-between align-items-start mb-2">
@@ -590,13 +649,158 @@
     }
 
     function updateRecentTable(list) { let h=''; list.slice().reverse().forEach(s=>{ h+=`<tr><td>${s.id}</td><td>${s.name}</td></tr>`}); document.getElementById('regTable').innerHTML=h; }
-    window.downloadBatchPDF = function(scoutList, filename) { if(!scoutList || scoutList.length === 0) return; const { jsPDF } = window.jspdf; const doc = new jsPDF(); const cardW = 45, cardH = 65, marginX = 15, marginY = 15, gap = 2; let col = 0, row = 0; const qrDiv = document.getElementById('qr-hidden'); scoutList.forEach((s, i) => { if(i > 0 && i % 16 === 0) { doc.addPage(); col = 0; row = 0; } qrDiv.innerHTML = ""; new QRCode(qrDiv, { text: s.id, width: 100, height: 100 }); const img = qrDiv.querySelector('canvas').toDataURL("image/png"); const curX = marginX + (col * (cardW + gap)); const curY = marginY + (row * (cardH + gap)); doc.setLineWidth(0.1); doc.rect(curX, curY, cardW, cardH); doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.text("SCOUT PASS", curX + (cardW/2), curY + 8, {align:'center'}); doc.addImage(img, 'PNG', curX + (cardW - 25)/2, curY + 12, 25, 25); doc.setFontSize(11); doc.text(s.id, curX + (cardW/2), curY + 44, {align:'center'}); doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.text(s.name.substring(0,18), curX + (cardW/2), curY + 52, {align:'center'}); doc.setFontSize(6); doc.setTextColor(100); doc.text(s.troop.substring(0,28), curX + (cardW/2), curY + 58, {align:'center'}); doc.setTextColor(0); col++; if(col >= 4) { col = 0; row++; } }); doc.save(filename ? `${filename}.pdf` : `Scout_IDs.pdf`); }
+    
+    // --- UPDATED PDF DOWNLOAD (BIG QR + DECENT FONT) ---
+    window.downloadBatchPDF = function(scoutList, filename) { 
+        if(!scoutList || scoutList.length === 0) return; 
+        
+        const { jsPDF } = window.jspdf; 
+        const doc = new jsPDF(); 
+        
+        const cardW = 45, cardH = 65, marginX = 15, marginY = 15, gap = 2; 
+        let col = 0, row = 0; 
+        const qrDiv = document.getElementById('qr-hidden'); 
+        
+        scoutList.forEach((s, i) => { 
+            if(i > 0 && i % 16 === 0) { 
+                doc.addPage(); 
+                col = 0; 
+                row = 0; 
+            } 
+            
+            // 1. GENERATE QR (Only RegNo is embedded)
+            qrDiv.innerHTML = ""; 
+            new QRCode(qrDiv, { text: s.id, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.H }); 
+            const img = qrDiv.querySelector('canvas').toDataURL("image/png"); 
+            
+            const curX = marginX + (col * (cardW + gap)); 
+            const curY = marginY + (row * (cardH + gap)); 
+            const centerX = curX + (cardW/2);
+            
+            // 2. DRAW BORDER
+            doc.setLineWidth(0.1); 
+            doc.rect(curX, curY, cardW, cardH); 
+            
+            // 3. HEADER
+            doc.setFont("helvetica", "bold"); 
+            doc.setFontSize(9); 
+            doc.text("SCOUT PASS", centerX, curY + 6, {align:'center'}); 
+            
+            // 4. BIG QR CODE
+            // Increased size to 35x35 and centered
+            doc.addImage(img, 'PNG', curX + (cardW - 35)/2, curY + 9, 35, 35); 
+            
+            // 5. REGISTRATION NUMBER (Big & Clear)
+            doc.setFont("helvetica", "bold"); 
+            doc.setFontSize(11); 
+            doc.text(s.id, centerX, curY + 50, {align:'center'}); 
+            
+            // 6. NAME (Smaller, normal font)
+            doc.setFont("helvetica", "normal"); 
+            doc.setFontSize(9); 
+            // Truncate name if too long
+            let printName = s.name.length > 20 ? s.name.substring(0,18) + '..' : s.name;
+            doc.text(printName, centerX, curY + 56, {align:'center'}); 
+            
+            // 7. FOOTER
+            doc.setFontSize(6); 
+            doc.setTextColor(150); 
+            doc.text("SCAN TO VERIFY", centerX, curY + 62, {align:'center'}); 
+            doc.setTextColor(0); 
+
+            col++; 
+            if(col >= 4) { col = 0; row++; } 
+        }); 
+        
+        doc.save(filename ? `${filename}.pdf` : `Scout_IDs.pdf`); 
+    }
+
+    // --- NEW EXPORT/IMPORT FEATURES ---
+    window.exportData = function() {
+        if(allScouts.length === 0) return Swal.fire('Empty', 'No data to export', 'info');
+        const dataStr = JSON.stringify(allScouts, null, 2);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ScoutDB_Backup_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+    }
+
+    window.importData = function(input) {
+        const file = input.files[0];
+        if(!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if(!Array.isArray(data)) throw new Error("Invalid Format");
+                
+                const updates = {};
+                data.forEach(s => {
+                    const safeKey = s.id.replace(/[.#$/[\]]/g, '_');
+                    updates[`scouts/${safeKey}`] = s;
+                });
+                
+                await update(ref(db), updates);
+                Swal.fire('Success', `Restored ${data.length} records.`, 'success');
+            } catch(err) {
+                Swal.fire('Error', 'Invalid File Format', 'error');
+            }
+            input.value = ''; // Reset input
+        };
+        reader.readAsText(file);
+    }
+
     window.showSection = (id) => { document.querySelectorAll('.section').forEach(d=>d.style.display='none'); document.getElementById('sec-'+id).style.display='block'; document.getElementById('pageTitle').innerText = id.toUpperCase(); };
     window.logout = () => signOut(auth).then(()=>window.location.href="index.html"); window.filterDirectory = () => { const term = document.getElementById('searchDir').value.toLowerCase(); document.querySelectorAll('#dirTable tr').forEach(row => { row.style.display = row.innerText.toLowerCase().includes(term) ? '' : 'none'; }); };
-    window.removeEvent = (k) => remove(ref(db, `events/${k}`)); window.initiateSystemReset = async () => { const { value: code } = await Swal.fire({ title: '⚠️ SYSTEM RESET', input: 'password', text: 'Enter Admin Code to WIPE database.', confirmButtonColor: '#d33' }); if (code === 'MadhawaBasnayake@200431504082#') { await remove(ref(db, 'scouts')); await remove(ref(db, 'logs')); await remove(ref(db, 'events')); await remove(ref(db, 'alerts')); await set(ref(db, 'system/scoutCounter'), 0); Swal.fire('WIPED', 'System Reset Complete', 'success'); } };
-    window.viewScout = (safeKey) => { const sc = allScouts.find(s => s.id.replace('/','_') === safeKey); if(sc) { document.getElementById('panelName').innerText = sc.name; document.getElementById('panelID').innerText = sc.id; document.getElementById('panelPoints').innerText = sc.points; document.getElementById('panelTroop').innerText = sc.troop; selectedScoutData = sc; const btn = document.getElementById('btnToggleMissing'); if(sc.isMissing) { btn.className = "btn btn-success"; btn.innerText = "Mark as Safe"; } else { btn.className = "btn btn-outline-danger"; btn.innerText = "Mark as Missing"; } new bootstrap.Offcanvas(document.getElementById('scoutOffcanvas')).show(); applyPermissions(); } };
-    window.toggleMissingFromPanel = async () => { if(!selectedScoutData) return; const safeKey = selectedScoutData.id.replace('/','_'); const newState = !selectedScoutData.isMissing; await update(ref(db, `scouts/${safeKey}`), { isMissing: newState }); if(newState) { push(ref(db, 'alerts'), { scoutName: selectedScoutData.name, location: "Admin Panel Report", timestamp: serverTimestamp() }); Swal.fire({icon: 'warning', title: 'Marked Missing', text: 'Alert Sent!'}); } else { Swal.fire({icon: 'success', title: 'Marked Safe'}); } viewScout(safeKey); };
-    window.downloadSingleID = () => downloadBatchPDF([selectedScoutData], `${selectedScoutData.id.replace('/','_')}`); window.deleteScoutFromPanel = async () => { if(!selectedScoutData) return; await remove(ref(db, `scouts/${selectedScoutData.id.replace('/','_')}`)); bootstrap.Offcanvas.getInstance(document.getElementById('scoutOffcanvas')).hide(); }; window.exportLogsPDF = () => { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.autoTable({ head: [['Time', 'Scout', 'Event', 'Action']], body: allLogs.map(l => [new Date(l.timestamp).toLocaleTimeString(), l.scoutName, l.eventName, l.action]) }); doc.save(`Logs.pdf`); }
+    window.removeEvent = (k) => remove(ref(db, `events/${k}`)); 
+
+    // --- UPDATED RESET FUNCTION ---
+    window.initiateSystemReset = async () => { 
+        const { value: code } = await Swal.fire({ 
+            title: '⚠️ SYSTEM RESET', 
+            input: 'password', 
+            inputLabel: 'Enter Admin Password', 
+            inputPlaceholder: 'Password',
+            confirmButtonText: 'Verify',
+            confirmButtonColor: '#d33',
+            showCancelButton: true
+        }); 
+        
+        if (code === 'MadhawaBasnayake@20041110') { 
+            const result = await Swal.fire({
+                title: 'Are you sure?',
+                text: "This will delete ALL Scouts, Logs, and Events. Staff accounts will remain.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, WIPE EVERYTHING!'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    await remove(ref(db, 'scouts')); 
+                    await remove(ref(db, 'logs')); 
+                    await remove(ref(db, 'events')); 
+                    await remove(ref(db, 'alerts')); 
+                    await remove(ref(db, 'special_codes'));
+                    await set(ref(db, 'system/scoutCounter'), 0); 
+                    Swal.fire('WIPED!', 'System has been reset successfully.', 'success'); 
+                } catch (error) {
+                    Swal.fire('Error', error.message, 'error');
+                }
+            }
+        } else if (code) {
+            Swal.fire('Error', 'Invalid Admin Password!', 'error');
+        }
+    };
+
+    window.viewScout = (safeKey) => { const sc = allScouts.find(s => s.id.replace(/[.#$/[\]]/g, '_') === safeKey); if(sc) { document.getElementById('panelName').innerText = sc.name; document.getElementById('panelID').innerText = sc.id; document.getElementById('panelPoints').innerText = sc.points; document.getElementById('panelTroop').innerText = sc.troop || '-'; selectedScoutData = sc; const btn = document.getElementById('btnToggleMissing'); if(sc.isMissing) { btn.className = "btn btn-success"; btn.innerText = "Mark as Safe"; } else { btn.className = "btn btn-outline-danger"; btn.innerText = "Mark as Missing"; } new bootstrap.Offcanvas(document.getElementById('scoutOffcanvas')).show(); applyPermissions(); } };
+    window.toggleMissingFromPanel = async () => { if(!selectedScoutData) return; const safeKey = selectedScoutData.id.replace(/[.#$/[\]]/g, '_'); const newState = !selectedScoutData.isMissing; await update(ref(db, `scouts/${safeKey}`), { isMissing: newState }); if(newState) { push(ref(db, 'alerts'), { scoutName: selectedScoutData.name, location: "Admin Panel Report", timestamp: serverTimestamp() }); Swal.fire({icon: 'warning', title: 'Marked Missing', text: 'Alert Sent!'}); } else { Swal.fire({icon: 'success', title: 'Marked Safe'}); } viewScout(safeKey); };
+    window.downloadSingleID = () => downloadBatchPDF([selectedScoutData], `${selectedScoutData.id.replace(/[.#$/[\]]/g, '_')}`); window.deleteScoutFromPanel = async () => { if(!selectedScoutData) return; await remove(ref(db, `scouts/${selectedScoutData.id.replace(/[.#$/[\]]/g, '_')}`)); bootstrap.Offcanvas.getInstance(document.getElementById('scoutOffcanvas')).hide(); }; window.exportLogsPDF = () => { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.autoTable({ head: [['Time', 'Scout', 'Event', 'Action']], body: allLogs.map(l => [new Date(l.timestamp).toLocaleTimeString(), l.scoutName, l.eventName, l.action]) }); doc.save(`Logs.pdf`); }
 </script>
 </body>
 </html>
