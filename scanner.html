@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ScoutPass Scanner V31 (Delay Added)</title>
+    <title>ScoutPass Scanner</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
@@ -141,7 +141,10 @@
         let cameras = [];
         let isFlashOn = false;
         let pendingBonus = null; 
-        let lastScanTime = 0; // DELAY VARIABLE
+        
+        // --- TRACKING VARIABLES ---
+        let lastScanTime = 0; 
+        let lastScannedCode = null;
 
         // AUDIO CONTEXT FOR BEEP
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -201,7 +204,7 @@
         function startCamera(camId) {
             html5QrCode = new Html5Qrcode("reader");
             const config = { 
-                fps: 30,
+                fps: 25, 
                 qrbox: { width: 250, height: 250 }, 
                 experimentalFeatures: { useBarCodeDetectorIfSupported: true },
                 aspectRatio: 1.0
@@ -213,12 +216,20 @@
         window.toggleFlash = () => { if(html5QrCode) { isFlashOn = !isFlashOn; html5QrCode.applyVideoConstraints({ advanced: [{ torch: isFlashOn }] }); document.getElementById('flashBtn').classList.toggle('active'); } }
         window.handleManualSubmit = () => { const val = document.getElementById('manualInput').value; if(val) processScan(val); }
 
-        // --- CORE LOGIC ---
+        // --- OPTIMIZED SCAN LOGIC ---
         async function processScan(code) {
-            // 1. COOLDOWN CHECK (1 Second)
             const now = Date.now();
-            if (now - lastScanTime < 1000) return;
+
+            // 1. DUPLICATE CHECK (10 Seconds)
+            // කලින් ස්කෑන් කරපු QR එකම නම්, තත්පර 10ක් යනකම් Ignore කරනවා.
+            if (code === lastScannedCode && (now - lastScanTime < 10000)) {
+                return;
+            }
+
+            // වෙනස් QR එකක් නම් කෙලින්ම ස්කෑන් වෙනවා (No Global Delay)
+
             lastScanTime = now;
+            lastScannedCode = code;
 
             if (!selectedEvent) return Swal.fire({toast:true, position:'top', icon:'warning', title:'Select an Event first!'});
             
@@ -234,6 +245,8 @@
                     document.getElementById('bonusDetails').innerText = `Adding ${pendingBonus.points} pts (Scan Scout Now)`;
                     const Toast = Swal.mixin({toast:true, position:'top', showConfirmButton:false, timer:2000});
                     Toast.fire({icon:'info', title: `Bonus: ${pendingBonus.name} Active`});
+                    
+                    lastScannedCode = null; // Bonus mode allows rescanning
                     html5QrCode.resume();
                 } else {
                     Swal.fire('Error', 'Invalid Token', 'error').then(()=>html5QrCode.resume());
@@ -256,7 +269,9 @@
                     showResultModal(scout, code);
                 }
             } else {
-                Swal.fire({icon:'error', title:'Unknown ID', timer:1000, showConfirmButton:false}).then(()=>html5QrCode.resume());
+                Swal.fire({icon:'error', title:'Unknown ID', timer:1000, showConfirmButton:false}).then(()=> {
+                    html5QrCode.resume();
+                });
             }
             document.getElementById('manualInput').value = "";
         }
@@ -284,6 +299,7 @@
             } catch (e) {
                 Swal.fire('Error', e.message, 'error');
             } finally {
+                lastScannedCode = null;
                 if(html5QrCode) html5QrCode.resume();
             }
         }
@@ -332,8 +348,18 @@
             Toast.fire({icon:'success', title: 'Saved'});
         }
 
-        window.closeModal = () => { document.getElementById('resultModal').style.display='none'; if(html5QrCode) html5QrCode.resume(); }
-        window.closeMissingAlert = () => { document.getElementById('missingAlert').style.display='none'; if(html5QrCode) html5QrCode.resume(); }
+        window.closeModal = () => { 
+            document.getElementById('resultModal').style.display='none'; 
+            // Resume with a tiny delay just to prevent camera stutter
+            setTimeout(() => {
+                if(html5QrCode) html5QrCode.resume();
+            }, 300);
+        }
+        
+        window.closeMissingAlert = () => { 
+            document.getElementById('missingAlert').style.display='none'; 
+            if(html5QrCode) html5QrCode.resume(); 
+        }
     </script>
 </body>
 </html>
