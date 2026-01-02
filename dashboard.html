@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scout Pass | Command Center V33.7 (Visibilty & Safe Mode)</title>
+    <title>Scout Pass | Command Center V34.0 (Final)</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
@@ -57,12 +57,9 @@
     <div class="nav flex-column">
         <div class="nav-link active" onclick="showSection('overview')"><i class="bi bi-grid-1x2-fill me-2"></i> War Room</div>
         <div class="nav-link text-danger fw-bold" onclick="showSection('alerts')"><i class="bi bi-bell-fill me-2"></i> Alerts <span id="alertBadge" class="badge bg-danger ms-2" style="display:none">0</span></div>
-        <div class="nav-link" onclick="showSection('livelogs')"><i class="bi bi-activity me-2"></i> Live Logs</div>
-        <div class="nav-link" onclick="showSection('rankings')"><i class="bi bi-trophy-fill me-2"></i> Rankings</div>
         <div class="nav-link" onclick="showSection('registration')"><i class="bi bi-person-plus-fill me-2"></i> Registration</div>
         <div class="nav-link" onclick="showSection('directory')"><i class="bi bi-search me-2"></i> Directory</div>
         <div class="nav-link" onclick="showSection('events')"><i class="bi bi-calendar-event-fill me-2"></i> Events</div>
-        <div class="nav-link" onclick="showSection('special')"><i class="bi bi-ticket-perforated-fill me-2"></i> Special QR</div>
         <div class="nav-link admin-only" onclick="showSection('staff')"><i class="bi bi-people-fill me-2"></i> Staff Manager</div>
         <div class="nav-link" onclick="showSection('reports')"><i class="bi bi-file-earmark-pdf-fill me-2"></i> Reports</div>
         <div class="nav-link mt-3 text-dark fw-bold admin-only" onclick="showSection('settings')"><i class="bi bi-gear-fill me-2"></i> Settings</div>
@@ -102,35 +99,6 @@
         </div>
     </div>
 
-    <div id="sec-livelogs" class="section animate__animated animate__fadeIn" style="display:none;">
-        <div class="stat-card">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold text-primary"><i class="bi bi-activity"></i> Real-time Activity Feed</h5>
-                <span class="badge bg-success animate__animated animate__pulse animate__infinite">LIVE</span>
-            </div>
-            <div class="table-responsive" style="max-height: 600px;">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light" style="position: sticky; top: 0;">
-                        <tr><th>Time</th><th>Scout Name</th><th>Event</th><th>Action</th><th>Scanned By</th></tr>
-                    </thead>
-                    <tbody id="liveLogsBody"><tr><td colspan="5" class="text-center text-muted">Waiting...</td></tr></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div id="sec-rankings" class="section animate__animated animate__fadeIn" style="display:none;">
-        <div class="stat-card border-warning border-top border-5">
-            <h4 class="fw-bold mb-4 text-warning"><i class="bi bi-trophy-fill"></i> Top 10 High Performers (Auto-Calculated)</h4>
-            <div class="table-responsive">
-                <table class="table align-middle">
-                    <thead class="table-light"><tr><th>Rank</th><th>Scout Name</th><th>Troop</th><th>Total Points</th></tr></thead>
-                    <tbody id="rankingsBody"><tr><td colspan="4" class="text-center">Calculating points from logs...</td></tr></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
     <div id="sec-registration" class="section animate__animated animate__fadeIn" style="display:none;">
         <div class="stat-card admin-only">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -161,7 +129,7 @@
     <div id="sec-directory" class="section animate__animated animate__fadeIn" style="display:none;">
         <div class="stat-card">
             <input type="text" id="searchDir" class="form-control" placeholder="Search ID or Name..." onkeyup="filterDirectory()">
-            <div class="table-responsive mt-3"><table class="table align-middle table-hover"><thead><tr><th>ID</th><th>Name</th><th>Troop</th><th>Points</th><th>Status</th></tr></thead><tbody id="dirTable"></tbody></table></div>
+            <div class="table-responsive mt-3"><table class="table align-middle table-hover"><thead><tr><th>ID</th><th>Name</th><th>Troop</th><th>Status</th></tr></thead><tbody id="dirTable"></tbody></table></div>
         </div>
     </div>
 
@@ -197,21 +165,6 @@
         </div>
     </div>
 
-    <div id="sec-special" class="section animate__animated animate__fadeIn" style="display:none;">
-        <div class="row">
-            <div class="col-md-5 admin-only">
-                <div class="stat-card">
-                    <h5 class="fw-bold mb-3">Bonus Token</h5>
-                    <input type="text" id="spName" class="form-control mb-2" placeholder="Token Name">
-                    <input type="number" id="spPoints" class="form-control mb-2" placeholder="Points">
-                    <select id="spType" class="form-select mb-3"><option value="unlimited">Unlimited Use</option><option value="onetime">One-Time Use</option></select>
-                    <button onclick="createSpecialQR()" class="btn btn-warning w-100 fw-bold">Generate QR</button>
-                </div>
-            </div>
-            <div class="col-md-7"><div class="stat-card"><h6 class="fw-bold">Active Tokens</h6><div id="specialList"></div></div></div>
-        </div>
-    </div>
-
     <div id="sec-staff" class="section animate__animated animate__fadeIn" style="display:none;">
         <div class="row">
             <div class="col-md-4 admin-only">
@@ -228,21 +181,28 @@
     </div>
 
     <div id="sec-reports" class="section animate__animated animate__fadeIn" style="display:none;">
-        <div class="stat-card">
-            <h5 class="fw-bold mb-3">System Reports</h5>
-            <div class="row g-2 mb-3 align-items-end">
-                <div class="col-md-5"><select id="reportEventFilter" class="form-select" onchange="filterReports()"><option value="ALL">All Events</option></select></div>
-                <div class="col-md-3"><button onclick="downloadEventReport()" class="btn btn-primary w-100 fw-bold admin-only"><i class="bi bi-file-earmark-arrow-down-fill"></i> Download Filtered</button></div>
-                <div class="col-md-4 text-end"><button onclick="exportLogsPDF()" class="btn btn-outline-danger admin-only"><i class="bi bi-file-earmark-pdf-fill"></i> Full Log Dump</button></div>
+        <div class="stat-card text-center py-5">
+            <h5 class="fw-bold mb-3">On-Demand Reports</h5>
+            <p class="text-muted mb-4">Click below to fetch data and generate reports. This saves bandwidth.</p>
+            <div class="row g-2 justify-content-center">
+                <div class="col-md-4">
+                    <button onclick="exportLogsPDF()" class="btn btn-danger w-100 fw-bold py-3"><i class="bi bi-file-earmark-pdf-fill"></i> Download Full PDF</button>
+                </div>
             </div>
-            <hr>
-            <h6 class="fw-bold mt-4">Report Preview <span id="previewCount" class="badge bg-secondary ms-2">0</span></h6>
-            <div class="table-responsive" style="max-height:400px"><table class="table table-sm table-bordered"><thead><tr><th>Time</th><th>Scout</th><th>Event</th><th>Action</th></tr></thead><tbody id="reportsPreviewTable"></tbody></table></div>
+            <div class="mt-4" id="reportStatus"></div>
         </div>
     </div>
 
     <div id="sec-settings" class="section animate__animated animate__fadeIn" style="display:none;">
-        <div class="stat-card border-danger border-start border-5"><h3 class="fw-bold text-danger mb-3">Danger Zone</h3><button onclick="initiateSystemReset()" class="btn btn-danger fw-bold">RESET SYSTEM DATABASE</button></div>
+        <div class="stat-card border-danger border-start border-5 mb-4"><h3 class="fw-bold text-danger mb-3">Danger Zone</h3><button onclick="initiateSystemReset()" class="btn btn-danger fw-bold">RESET SYSTEM DATABASE</button></div>
+        
+        <div class="stat-card border-warning border-start border-5">
+            <h5 class="fw-bold text-warning mb-3">Maintenance Tools</h5>
+            <p class="small text-muted">Use this if the dashboard shows "0" but you have past logs.</p>
+            <button onclick="forceRecalculateStats()" class="btn btn-warning w-100 fw-bold">
+                <i class="bi bi-arrow-repeat"></i> Sync / Fix Stats from Logs
+            </button>
+        </div>
     </div>
 
     <div class="footer">ScoutPass | Developed by Madhawa Basanayake</div>
@@ -253,7 +213,7 @@
     <div class="offcanvas-body p-0">
         <div class="scout-profile-header"><div class="profile-avatar"><i class="bi bi-person-fill"></i></div><h4 class="fw-bold mb-0" id="panelName">Loading...</h4><div class="badge bg-white text-primary mt-2 fs-6" id="panelID">ID: ---</div></div>
         <div class="p-4">
-            <div class="row text-center mb-4"><div class="col-6 border-end"><h2 class="fw-bold text-warning mb-0" id="panelPoints">0</h2><small class="text-muted fw-bold">POINTS</small></div><div class="col-6"><h5 class="fw-bold mb-0" id="panelTroop">-</h5><small class="text-muted fw-bold">TROOP</small></div></div>
+            <div class="row text-center mb-4"><div class="col-12"><h5 class="fw-bold mb-0" id="panelTroop">-</h5><small class="text-muted fw-bold">TROOP</small></div></div>
             <div class="d-grid gap-2 mb-4 admin-only">
                 <button id="btnToggleMissing" class="btn btn-outline-danger" onclick="toggleMissingFromPanel()">Mark as Missing</button>
                 <button onclick="downloadSingleID()" class="btn btn-dark">Download ID Card</button>
@@ -275,7 +235,7 @@
 
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
 
-    let allScouts=[], allLogs=[], allEvents=[], lastBatchScouts=[]; let isScannerLocked = false; let selectedScoutData = null; let currentUserRole = 'admin'; let calculatedScoutPoints = {};
+    let allScouts=[], allEvents=[], currentStats={}, lastBatchScouts=[]; let isScannerLocked = false; let selectedScoutData = null; let currentUserRole = 'admin';
 
     onAuthStateChanged(auth, async (user) => { 
         if (!user) window.location.href = "index.html"; 
@@ -308,129 +268,163 @@
     onValue(ref(db, 'alerts'), (snap) => { const tbody = document.getElementById('alertsTableBody'); const badge = document.getElementById('alertBadge'); tbody.innerHTML = ""; if (snap.exists()) { const alerts = Object.entries(snap.val()); badge.innerText = alerts.length; badge.style.display = 'inline-block'; alerts.reverse().forEach(([key, alert]) => { tbody.innerHTML += `<tr><td class="fw-bold text-danger">${new Date(alert.timestamp).toLocaleTimeString()}</td><td><strong class="text-danger">MISSING FOUND!</strong><br>${alert.scoutName}</td><td>${alert.location}</td><td><button class="btn btn-sm btn-dark admin-only" onclick="resolveAlert('${key}')">Mark Safe</button></td></tr>`; }); if(currentUserRole!=='viewer') Swal.fire({toast:true, position:'top-end', icon:'warning', title:'⚠️ Alert Triggered!'}); applyPermissions(); } else { badge.style.display = 'none'; tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">No active alerts.</td></tr>`; } });
     window.resolveAlert = (key) => remove(ref(db, `alerts/${key}`)); window.clearAlerts = () => remove(ref(db, 'alerts'));
 
-    onValue(ref(db, 'logs'), (s) => { 
-        allLogs = s.exists() ? Object.values(s.val()) : []; 
-        document.getElementById('statScans').innerText = allLogs.length; 
-        
-        let inside = 0; 
-        calculatedScoutPoints = {}; 
+    // --- MAIN DASHBOARD RENDER LOGIC ---
+    function renderDashboard() {
+        // Global Counters
+        document.getElementById('statScans').innerText = currentStats.total_scans || 0;
+        document.getElementById('statInside').innerText = currentStats.inside_count || 0;
 
-        allLogs.forEach(l => { 
-            if(l.type === 'ACCESS') { if(l.action==='IN') inside++; else if(l.action==='OUT') inside--; }
+        const container = document.getElementById('liveEventCards'); 
+        container.innerHTML = ""; 
+
+        if (allEvents.length === 0) { 
+            container.innerHTML = `<div class="col-12 text-center py-5">No events created.</div>`; 
+            return; 
+        }
+
+        allEvents.forEach(evt => {
+            if(evt.isDeleted || evt.isVisible === false) return;
+
+            // Get Stats (Default to empty object if not found)
+            const evtStats = (currentStats.events && currentStats.events[evt.name]) ? currentStats.events[evt.name] : {};
             
-            let pointsToAdd = 0;
-            if (l.eventName && l.eventName.startsWith("BONUS")) {
-                const bonusMatch = l.action.match(/(\d+)/);
-                if(bonusMatch) pointsToAdd = parseInt(bonusMatch[0]) || 0;
-            } else {
-                const evt = allEvents.find(e => e.name === l.eventName);
-                if (evt && evt.points) {
-                    pointsToAdd = parseInt(evt.points) || 0;
-                }
+            let badgeType = evt.type || "ACTIVITY";
+            let bodyHtml = '';
+
+            // TYPE 1: GATE / ACCESS (IN, OUT, INSIDE)
+            if (badgeType === 'ACCESS' || (evt.buttons && evt.buttons.includes('IN'))) {
+                const inCount = evtStats.in || 0;
+                const outCount = evtStats.out || 0;
+                const inside = inCount - outCount;
+
+                bodyHtml = `
+                    <div class="row text-center mt-4">
+                        <div class="col-4 border-end">
+                            <h3 class="fw-bold mb-0">${inCount}</h3>
+                            <small class="text-muted fw-bold" style="font-size:0.7rem">IN</small>
+                        </div>
+                        <div class="col-4 border-end">
+                            <h3 class="fw-bold mb-0">${outCount}</h3>
+                            <small class="text-muted fw-bold" style="font-size:0.7rem">OUT</small>
+                        </div>
+                        <div class="col-4">
+                            <h3 class="fw-bold text-primary mb-0">${Math.max(0, inside)}</h3>
+                            <small class="text-primary fw-bold" style="font-size:0.7rem">INSIDE</small>
+                        </div>
+                    </div>`;
+            } 
+            // TYPE 2: ACTIVITY (TOTAL ONLY)
+            else {
+                const count = evtStats.completed || 0;
+                bodyHtml = `
+                    <div class="text-center mt-4 pb-2">
+                        <h2 class="text-success display-5 fw-bold mb-0">${count}</h2>
+                        <small class="text-muted fw-bold text-uppercase" style="font-size:0.7rem">Completed Scans</small>
+                    </div>`;
             }
 
-            if(pointsToAdd > 0 && l.scoutID) {
-                if(!calculatedScoutPoints[l.scoutID]) calculatedScoutPoints[l.scoutID] = 0;
-                calculatedScoutPoints[l.scoutID] += pointsToAdd;
-            }
-        }); 
+            container.innerHTML += `
+                <div class="col-md-6 col-lg-4">
+                    <div class="stat-card border-top border-4 border-primary h-100 position-relative">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h5 class="fw-bold mb-0 text-truncate" style="max-width:75%">${evt.name}</h5>
+                            <span class="badge bg-light text-dark border">${badgeType}</span>
+                        </div>
+                        ${bodyHtml}
+                    </div>
+                </div>`;
+        });
+    }
 
-        document.getElementById('statInside').innerText = Math.max(0, inside); 
-        
-        let liveH = ''; 
-        allLogs.slice().reverse().slice(0,100).forEach(l => { 
-            const staff = l.scannedBy ? l.scannedBy.split('@')[0] : 'System';
-            liveH += `<tr><td>${new Date(l.timestamp).toLocaleTimeString()}</td><td class="fw-bold text-primary">${l.scoutName}</td><td>${l.eventName}</td><td><span class="badge bg-dark">${l.action}</span></td><td class="text-muted small">${staff}</td></tr>`; 
-        }); 
-        document.getElementById('liveLogsBody').innerHTML = liveH; 
-        
-        filterReports(); 
-        renderEventCards(); 
-        renderRankings(); 
-        updateDirectoryPoints(); 
+    // LISTENER: STATS (Updates counters & triggers render)
+    onValue(ref(db, 'stats'), (s) => { 
+        currentStats = s.val() || {};
+        renderDashboard();
     });
 
+    // LISTENER: EVENTS (Updates list & triggers render)
     onValue(ref(db, 'events'), (s) => { 
         const data = s.val(); 
         allEvents = data ? Object.entries(data).map(([key, val]) => ({key, ...val})) : []; 
         
-        const filterDropdown = document.getElementById('reportEventFilter');
-        const currentSel = filterDropdown.value;
-        let opts = `<option value="ALL">All Events</option>`;
-        
-        allEvents.forEach(e => { 
-            if(!e.isDeleted) opts += `<option value="${e.name}">${e.name}</option>`; 
-        });
-        filterDropdown.innerHTML = opts;
-        filterDropdown.value = currentSel;
-
+        // Render Events List in Tab
         let h = ''; 
         allEvents.forEach(e => { 
             if (e.isDeleted) return;
-
             const btns = e.buttons ? e.buttons.map(b=>`<span class="badge bg-light text-dark border ms-1">${b}</span>`).join('') : ''; 
             const pointsTag = e.points > 0 ? `<span class="badge bg-success border ms-2">${e.points} PTS</span>` : '';
             const oneTimeTag = e.isOneTime ? `<span class="badge bg-danger ms-1">1-TIME</span>` : '';
-            
-            // Logic for toggle switch state
             const isVis = (e.isVisible === undefined) ? true : e.isVisible; 
             const checkedState = isVis ? 'checked' : '';
-
-            h += `<div class="d-flex justify-content-between align-items-center border-bottom p-2">
-                    <div>
-                        <span class="fw-bold text-primary">${e.name}</span>${pointsTag}${oneTimeTag}
-                        <div class="small text-muted mt-1">Buttons:${btns}</div>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="form-check form-switch mod-allowed">
-                            <input class="form-check-input" type="checkbox" onchange="toggleEventVisibility('${e.key}', this.checked)" ${checkedState}>
-                        </div>
-                        <button onclick="removeEvent('${e.key}')" class="btn btn-sm text-danger admin-only"><i class="bi bi-trash"></i></button>
-                    </div>
-                  </div>`; 
+            h += `<div class="d-flex justify-content-between align-items-center border-bottom p-2"><div><span class="fw-bold text-primary">${e.name}</span>${pointsTag}${oneTimeTag}<div class="small text-muted mt-1">Buttons:${btns}</div></div><div class="d-flex align-items-center gap-2"><div class="form-check form-switch mod-allowed"><input class="form-check-input" type="checkbox" onchange="toggleEventVisibility('${e.key}', this.checked)" ${checkedState}></div><button onclick="removeEvent('${e.key}')" class="btn btn-sm text-danger admin-only"><i class="bi bi-trash"></i></button></div></div>`; 
         }); 
         document.getElementById('eventsList').innerHTML = h; 
-        renderEventCards(); 
+        
+        // Render Dashboard Cards
+        renderDashboard();
         applyPermissions(); 
     });
 
-    // NEW FUNCTION: Toggle Visibility
-    window.toggleEventVisibility = async (key, status) => {
-        await update(ref(db, `events/${key}`), { isVisible: status });
-    };
-
-    function renderRankings() {
-        if(allScouts.length === 0) return;
-        const sorted = [...allScouts].map(s => ({...s, totalPoints: (calculatedScoutPoints[s.id] || 0)})).sort((a,b) => b.totalPoints - a.totalPoints);
-        const top10 = sorted.slice(0, 10);
-        let h = '';
-        top10.forEach((s, index) => {
-            let rank = index + 1;
-            let badge = `<span class="rank-badge" style="background:#333; color:white">${rank}</span>`;
-            if(rank === 1) badge = `<span class="rank-badge" style="background:var(--gold); color:black">${rank}</span>`;
-            if(rank === 2) badge = `<span class="rank-badge" style="background:var(--silver); color:black">${rank}</span>`;
-            if(rank === 3) badge = `<span class="rank-badge" style="background:var(--bronze); color:black">${rank}</span>`;
-            h += `<tr><td>${badge}</td><td class="fw-bold">${s.name}</td><td class="text-muted small">${s.troop || '-'}</td><td class="fw-bold text-warning">${s.totalPoints}</td></tr>`;
-        });
-        document.getElementById('rankingsBody').innerHTML = h;
-    }
+    window.toggleEventVisibility = async (key, status) => { await update(ref(db, `events/${key}`), { isVisible: status }); };
 
     function updateDirectoryPoints() {
         let h = ''; 
         allScouts.slice().reverse().slice(0,100).forEach(sc => { 
             const safeKey = sc.id.replace(/[.#$/[\]]/g, '_'); 
             const status = sc.isMissing ? '<span class="badge bg-danger">MISSING</span>' : '<span class="badge bg-success">Active</span>'; 
-            const pts = calculatedScoutPoints[sc.id] || 0;
-            h += `<tr style="cursor:pointer" onclick="viewScout('${safeKey}')"><td>${sc.id}</td><td class="fw-bold text-primary">${sc.name}</td><td>${sc.troop||'-'}</td><td>${pts}</td><td>${status}</td></tr>`; 
+            h += `<tr style="cursor:pointer" onclick="viewScout('${safeKey}')"><td>${sc.id}</td><td class="fw-bold text-primary">${sc.name}</td><td>${sc.troop||'-'}</td><td>${status}</td></tr>`; 
         }); 
         document.getElementById('dirTable').innerHTML = h;
     }
 
-    window.filterReports = () => { const filterVal = document.getElementById('reportEventFilter').value; let filteredLogs = allLogs.slice().reverse(); if(filterVal !== 'ALL') filteredLogs = filteredLogs.filter(l => l.eventName === filterVal); document.getElementById('previewCount').innerText = filteredLogs.length; let reportH = ''; filteredLogs.slice(0, 50).forEach(l => { reportH += `<tr><td>${new Date(l.timestamp).toLocaleTimeString()}</td><td>${l.scoutName}</td><td>${l.eventName}</td><td>${l.action}</td></tr>`; }); document.getElementById('reportsPreviewTable').innerHTML = reportH; }
-    window.downloadEventReport = () => { const filterVal = document.getElementById('reportEventFilter').value; let filteredLogs = allLogs.slice().reverse(); if(filterVal !== 'ALL') filteredLogs = filteredLogs.filter(l => l.eventName === filterVal); const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.text(`Report: ${filterVal}`, 14, 10); doc.autoTable({ head: [['Time', 'Scout', 'Event', 'Action', 'Scanned By']], body: filteredLogs.map(l => [new Date(l.timestamp).toLocaleTimeString(), l.scoutName, l.eventName, l.action, l.scannedBy || '-']) }); doc.save(`Report_${filterVal}.pdf`); }
-    window.createSpecialQR = async function() { const name = document.getElementById('spName').value; const points = document.getElementById('spPoints').value; const type = document.getElementById('spType').value; if(!name || !points) return; const newRef = push(ref(db, 'special_codes')); await set(newRef, { name: name, points: parseInt(points), type: type, isUsed: false, createdAt: serverTimestamp() }); const { jsPDF } = window.jspdf; const doc = new jsPDF({ format: [80, 80] }); const qrDiv = document.getElementById('qr-hidden'); qrDiv.innerHTML=""; new QRCode(qrDiv, { text: `BONUS:${newRef.key}`, width: 150, height: 150 }); const img = qrDiv.querySelector('canvas').toDataURL("image/png"); doc.setFontSize(12); doc.text("BONUS TOKEN", 40, 10, {align:'center'}); doc.addImage(img, 'PNG', 15, 15, 50, 50); doc.setFontSize(10); doc.text(name, 40, 70, {align:'center'}); doc.text(`${points} PTS (${type === 'onetime' ? '1-Use' : 'Unlim'})`, 40, 75, {align:'center'}); doc.save(`${name}_Bonus.pdf`); };
-    onValue(ref(db, 'special_codes'), (s) => { let h = '<ul class="list-group">'; if(s.exists()) { Object.entries(s.val()).forEach(([k, v]) => { h += `<li class="list-group-item d-flex justify-content-between"><div><strong>${v.name}</strong> (${v.points} pts)<br><small class="text-muted">${v.type || 'unlimited'}</small></div><button onclick="removeSpecial('${k}')" class="btn btn-sm btn-outline-danger admin-only"><i class="bi bi-trash"></i></button></li>`; }); } document.getElementById('specialList').innerHTML = h + '</ul>'; applyPermissions(); });
-    window.removeSpecial = (k) => remove(ref(db, `special_codes/${k}`));
+    // --- ON DEMAND EXPORT FUNCTION ---
+    window.exportLogsPDF = async () => { 
+        Swal.fire({ title: 'Downloading Data...', text: 'Fetching logs from server. Please wait.', didOpen: () => Swal.showLoading() });
+        try {
+            const snap = await get(ref(db, 'logs'));
+            if (!snap.exists()) throw new Error("No logs found.");
+            const logs = Object.values(snap.val());
+            const { jsPDF } = window.jspdf; 
+            const doc = new jsPDF(); 
+            doc.autoTable({ head: [['Time', 'Scout', 'Event', 'Action']], body: logs.map(l => [new Date(l.timestamp).toLocaleTimeString(), l.scoutName, l.eventName, l.action]) }); 
+            doc.save(`Full_Logs_Report.pdf`);
+            Swal.fire('Success', 'PDF Downloaded', 'success');
+        } catch (e) {
+            Swal.fire('Error', e.message, 'error');
+        }
+    }
+
+    // --- SYNC / RECALCULATE STATS FUNCTION ---
+    window.forceRecalculateStats = async () => {
+        Swal.fire({ title: 'Syncing...', text: 'Recalculating statistics from logs...', didOpen: () => Swal.showLoading() });
+        try {
+            const logSnap = await get(ref(db, 'logs'));
+            if (!logSnap.exists()) return Swal.fire('No Logs', 'Nothing to sync.', 'info');
+            const logs = Object.values(logSnap.val());
+
+            let newStats = { total_scans: 0, inside_count: 0, events: {} };
+
+            logs.forEach(l => {
+                newStats.total_scans++;
+                if (!newStats.events[l.eventName]) newStats.events[l.eventName] = { in:0, out:0, completed:0 };
+
+                if (l.action === 'IN') {
+                    newStats.events[l.eventName].in++;
+                    newStats.inside_count++;
+                } else if (l.action === 'OUT') {
+                    newStats.events[l.eventName].out++;
+                    newStats.inside_count--;
+                } else {
+                    newStats.events[l.eventName].completed++;
+                }
+            });
+
+            await set(ref(db, 'stats'), newStats);
+            Swal.fire('Success', 'Dashboard Synced with Logs!', 'success');
+        } catch (e) {
+            Swal.fire('Error', e.message, 'error');
+        }
+    };
 
     window.updatePasteCount = function() { document.getElementById('pasteCount').innerText = document.getElementById('bulkText').value.split('\n').filter(line => line.trim() !== '').length; };
     window.processBulkSafely = async function() { const text = document.getElementById('bulkText').value; if(!text.trim()) return Swal.fire('Error', 'Paste the data first!', 'error'); const lines = text.trim().split('\n').filter(l => l.trim() !== ''); document.getElementById('bulkProgress').style.display = 'flex'; lastBatchScouts = []; let successCount = 0; try { const updates = {}; lines.forEach(line => { const parts = line.split(','); if(parts.length >= 2) { const regNo = parts[0].trim(); const name = parts.slice(1).join(',').trim(); if(regNo && name) { const safeKey = regNo.replace(/[.#$/[\]]/g, '_'); const scoutObj = { id: regNo, name: name, troop: "-", points: 0, isMissing: false, regDate: serverTimestamp() }; updates[`scouts/${safeKey}`] = scoutObj; lastBatchScouts.push(scoutObj); successCount++; } } }); if (Object.keys(updates).length > 0) { await update(ref(db), updates); } document.getElementById('bulkProgress').querySelector('.progress-bar').style.width = '100%'; updateRecentTable(lastBatchScouts); document.getElementById('bulkText').value = ''; Swal.fire({ icon: 'success', title: 'Done', text: `Registered ${successCount} scouts.` }); downloadBatchPDF(lastBatchScouts, `IDs_Export`); } catch(e) { Swal.fire('Error', e.message, 'error'); } finally { setTimeout(() => { document.getElementById('bulkProgress').style.display = 'none'; }, 2000); } };
@@ -439,7 +433,7 @@
     onValue(ref(db, 'users'), (s) => { const tbody = document.getElementById('staffTable'); tbody.innerHTML = ""; if (s.exists()) { Object.entries(s.val()).forEach(([uid, u]) => { tbody.innerHTML += `<tr><td>${u.email}</td><td><span class="badge bg-dark">${u.role}</span></td><td><button class="btn btn-sm btn-outline-danger admin-only" onclick="removeUser('${uid}')"><i class="bi bi-trash"></i></button></td></tr>`; }); } applyPermissions(); });
     window.removeUser = (uid) => remove(ref(db, `users/${uid}`));
     
-    onValue(ref(db, 'scouts'), (s) => { allScouts = s.exists() ? Object.values(s.val()) : []; document.getElementById('statTotal').innerText = allScouts.length; updateDirectoryPoints(); renderRankings(); });
+    onValue(ref(db, 'scouts'), (s) => { allScouts = s.exists() ? Object.values(s.val()) : []; document.getElementById('statTotal').innerText = allScouts.length; updateDirectoryPoints(); });
 
     window.updateButtonPlaceholder = () => { const t = document.getElementById('evtType').value; const b = document.getElementById('evtButtons'); if(t === 'ACCESS') b.value = "IN,OUT"; else if(t === 'ONETIME') b.value = "SCAN"; else b.value = ""; }
     
@@ -454,47 +448,14 @@
         } 
     }
     
-    // --- UPDATED REMOVE WITH PASSWORD & DELETE PROTECTION ---
     window.removeEvent = async (k) => {
-        const { value: password } = await Swal.fire({
-            title: 'Enter Admin Password',
-            input: 'password',
-            inputPlaceholder: 'Code (2004)',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            confirmButtonText: 'Archive Event'
-        });
-
-        if (password === '2004') {
-            await update(ref(db, `events/${k}`), { isDeleted: true, active: false });
-            Swal.fire({icon:'info', title:'Archived', text:'Event hidden, but points preserved.', timer:1500, showConfirmButton:false});
-        } else if (password) {
-            Swal.fire('Error', 'Invalid Password', 'error');
-        }
+        const { value: password } = await Swal.fire({ title: 'Enter Admin Password', input: 'password', inputPlaceholder: 'Code (2004)', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Archive Event' });
+        if (password === '2004') { await update(ref(db, `events/${k}`), { isDeleted: true, active: false }); Swal.fire({icon:'info', title:'Archived', text:'Event hidden, but points preserved.', timer:1500, showConfirmButton:false}); } 
+        else if (password) { Swal.fire('Error', 'Invalid Password', 'error'); }
     }
 
     onValue(ref(db, 'presence'), (snap) => { document.getElementById('statOnline').innerText = snap.exists() ? Object.keys(snap.val()).length : 0; });
     
-    function renderEventCards() { 
-        const container = document.getElementById('liveEventCards'); 
-        container.innerHTML = ""; 
-        if (allEvents.length === 0) { container.innerHTML = `<div class="col-12 text-center py-5">No Events created.</div>`; return; } 
-        
-        allEvents.forEach(evt => { 
-            // CHECK VISIBILITY & DELETED STATUS
-            const isVis = (evt.isVisible === undefined) ? true : evt.isVisible;
-            if(evt.isDeleted || !isVis) return; 
-
-            let inCount = 0; let outCount = 0; let totalActivityCount = 0; 
-            allLogs.forEach(l => { if (l.eventName === evt.name) { if (l.action === 'IN') { inCount++; } else if (l.action === 'OUT') { outCount++; } else { totalActivityCount++; } } }); 
-            let body = ''; 
-            if (evt.type === 'ACCESS') { body = `<br><div class="row text-center"><div class="col-4 border-end"><h3 class="fw-bold">${inCount}</h3><small class="text-muted">IN</small></div><div class="col-4 border-end"><h3 class="fw-bold">${outCount}</h3><small class="text-muted">OUT</small></div><div class="col-4"><h3 class="fw-bold text-primary">${Math.max(0, inCount - outCount)}</h3><small class="text-primary fw-bold">INSIDE</small></div></div>`; } 
-            else { body = `<br><div class="text-center py-2"><h2 class="text-success display-4 fw-bold">${totalActivityCount}</h2><small class="text-muted fw-bold text-uppercase">Total Completed</small></div>`; } 
-            const tag = evt.isOneTime ? '<span class="badge bg-danger border ms-2">1-TIME</span>' : ''; 
-            container.innerHTML += `<br><div class="col-md-4"><div class="stat-card border-top border-4 border-primary h-100"><div class="d-flex justify-content-between align-items-start mb-2"><h5 class="fw-bold mb-0 text-truncate" style="max-width:80%">${evt.name}</h5><div>${tag}<span class="badge bg-light text-dark border">${evt.type}</span></div></div><hr class="my-3" style="opacity:0.1">${body}</div></div>`; 
-        }); 
-    }
-
     function updateRecentTable(list) { let h=''; list.slice().reverse().forEach(s=>{ h+=`<tr><td>${s.id}</td><td>${s.name}</td></tr>`}); document.getElementById('regTable').innerHTML=h; }
     
     window.downloadBatchPDF = function(scoutList, filename) { if(!scoutList || scoutList.length === 0) return; const { jsPDF } = window.jspdf; const doc = new jsPDF(); const cardW = 45, cardH = 65, marginX = 15, marginY = 15, gap = 2; let col = 0, row = 0; const qrDiv = document.getElementById('qr-hidden'); scoutList.forEach((s, i) => { if(i > 0 && i % 16 === 0) { doc.addPage(); col = 0; row = 0; } qrDiv.innerHTML = ""; new QRCode(qrDiv, { text: s.id, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.H }); const img = qrDiv.querySelector('canvas').toDataURL("image/png"); const curX = marginX + (col * (cardW + gap)); const curY = marginY + (row * (cardH + gap)); const centerX = curX + (cardW/2); doc.setLineWidth(0.1); doc.rect(curX, curY, cardW, cardH); doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.text("SCOUT PASS", centerX, curY + 6, {align:'center'}); doc.addImage(img, 'PNG', curX + (cardW - 35)/2, curY + 9, 35, 35); doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.text(s.id, centerX, curY + 50, {align:'center'}); doc.setFont("helvetica", "normal"); doc.setFontSize(9); let printName = s.name.length > 20 ? s.name.substring(0,18) + '..' : s.name; doc.text(printName, centerX, curY + 56, {align:'center'}); doc.setFontSize(6); doc.setTextColor(150); doc.text("SCAN TO VERIFY", centerX, curY + 62, {align:'center'}); doc.setTextColor(0); col++; if(col >= 4) { col = 0; row++; } }); doc.save(filename ? `${filename}.pdf` : `Scout_IDs.pdf`); }
@@ -503,11 +464,11 @@
     window.showSection = (id) => { document.querySelectorAll('.section').forEach(d=>d.style.display='none'); document.getElementById('sec-'+id).style.display='block'; document.getElementById('pageTitle').innerText = id.toUpperCase(); };
     window.logout = () => signOut(auth).then(()=>window.location.href="index.html"); window.filterDirectory = () => { const term = document.getElementById('searchDir').value.toLowerCase(); document.querySelectorAll('#dirTable tr').forEach(row => { row.style.display = row.innerText.toLowerCase().includes(term) ? '' : 'none'; }); };
     
-    window.initiateSystemReset = async () => { const { value: code } = await Swal.fire({ title: '⚠️ SYSTEM RESET', input: 'password', inputLabel: 'Enter Admin Password', inputPlaceholder: 'Password', confirmButtonText: 'Verify', confirmButtonColor: '#d33', showCancelButton: true }); if (code === 'MadhawaBasnayake@20041110') { const result = await Swal.fire({ title: 'Are you sure?', text: "This will delete ALL Scouts, Logs, and Events. Staff accounts will remain.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'Yes, WIPE EVERYTHING!' }); if (result.isConfirmed) { try { await remove(ref(db, 'scouts')); await remove(ref(db, 'logs')); await remove(ref(db, 'events')); await remove(ref(db, 'alerts')); await remove(ref(db, 'special_codes')); await set(ref(db, 'system/scoutCounter'), 0); Swal.fire('WIPED!', 'System has been reset successfully.', 'success'); } catch (error) { Swal.fire('Error', error.message, 'error'); } } } else if (code) { Swal.fire('Error', 'Invalid Admin Password!', 'error'); } };
+    window.initiateSystemReset = async () => { const { value: code } = await Swal.fire({ title: '⚠️ SYSTEM RESET', input: 'password', inputLabel: 'Enter Admin Password', inputPlaceholder: 'Password', confirmButtonText: 'Verify', confirmButtonColor: '#d33', showCancelButton: true }); if (code === 'MadhawaBasnayake@20041110') { const result = await Swal.fire({ title: 'Are you sure?', text: "This will delete ALL Scouts, Logs, and Events. Staff accounts will remain.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'Yes, WIPE EVERYTHING!' }); if (result.isConfirmed) { try { await remove(ref(db, 'scouts')); await remove(ref(db, 'logs')); await remove(ref(db, 'events')); await remove(ref(db, 'alerts')); await remove(ref(db, 'special_codes')); await remove(ref(db, 'stats')); await set(ref(db, 'system/scoutCounter'), 0); Swal.fire('WIPED!', 'System has been reset successfully.', 'success'); } catch (error) { Swal.fire('Error', error.message, 'error'); } } } else if (code) { Swal.fire('Error', 'Invalid Admin Password!', 'error'); } };
 
-    window.viewScout = (safeKey) => { const sc = allScouts.find(s => s.id.replace(/[.#$/[\]]/g, '_') === safeKey); if(sc) { document.getElementById('panelName').innerText = sc.name; document.getElementById('panelID').innerText = sc.id; document.getElementById('panelPoints').innerText = calculatedScoutPoints[sc.id] || 0; document.getElementById('panelTroop').innerText = sc.troop || '-'; selectedScoutData = sc; const btn = document.getElementById('btnToggleMissing'); if(sc.isMissing) { btn.className = "btn btn-success"; btn.innerText = "Mark as Safe"; } else { btn.className = "btn btn-outline-danger"; btn.innerText = "Mark as Missing"; } new bootstrap.Offcanvas(document.getElementById('scoutOffcanvas')).show(); applyPermissions(); } };
+    window.viewScout = (safeKey) => { const sc = allScouts.find(s => s.id.replace(/[.#$/[\]]/g, '_') === safeKey); if(sc) { document.getElementById('panelName').innerText = sc.name; document.getElementById('panelID').innerText = sc.id; document.getElementById('panelTroop').innerText = sc.troop || '-'; selectedScoutData = sc; const btn = document.getElementById('btnToggleMissing'); if(sc.isMissing) { btn.className = "btn btn-success"; btn.innerText = "Mark as Safe"; } else { btn.className = "btn btn-outline-danger"; btn.innerText = "Mark as Missing"; } new bootstrap.Offcanvas(document.getElementById('scoutOffcanvas')).show(); applyPermissions(); } };
     window.toggleMissingFromPanel = async () => { if(!selectedScoutData) return; const safeKey = selectedScoutData.id.replace(/[.#$/[\]]/g, '_'); const newState = !selectedScoutData.isMissing; await update(ref(db, `scouts/${safeKey}`), { isMissing: newState }); if(newState) { push(ref(db, 'alerts'), { scoutName: selectedScoutData.name, location: "Admin Panel Report", timestamp: serverTimestamp() }); Swal.fire({icon: 'warning', title: 'Marked Missing', text: 'Alert Sent!'}); } else { Swal.fire({icon: 'success', title: 'Marked Safe'}); } viewScout(safeKey); };
-    window.downloadSingleID = () => downloadBatchPDF([selectedScoutData], `${selectedScoutData.id.replace(/[.#$/[\]]/g, '_')}`); window.deleteScoutFromPanel = async () => { if(!selectedScoutData) return; await remove(ref(db, `scouts/${selectedScoutData.id.replace(/[.#$/[\]]/g, '_')}`)); bootstrap.Offcanvas.getInstance(document.getElementById('scoutOffcanvas')).hide(); }; window.exportLogsPDF = () => { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.autoTable({ head: [['Time', 'Scout', 'Event', 'Action']], body: allLogs.map(l => [new Date(l.timestamp).toLocaleTimeString(), l.scoutName, l.eventName, l.action]) }); doc.save(`Logs.pdf`); }
+    window.downloadSingleID = () => downloadBatchPDF([selectedScoutData], `${selectedScoutData.id.replace(/[.#$/[\]]/g, '_')}`); window.deleteScoutFromPanel = async () => { if(!selectedScoutData) return; await remove(ref(db, `scouts/${selectedScoutData.id.replace(/[.#$/[\]]/g, '_')}`)); bootstrap.Offcanvas.getInstance(document.getElementById('scoutOffcanvas')).hide(); }; 
 </script>
 </body>
 </html>
